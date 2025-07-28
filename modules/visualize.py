@@ -44,7 +44,7 @@ def show_grid_tkinter(df):
     tree.pack(fill=tk.BOTH, expand=True)
     root.mainloop()
 
-def show_grid_matplotlib(df, cmap='Reds', font_size=6):
+def show_grid_matplotlib(df, cmap='plasma', font_size=6):
     # Convert DataFrame to a numeric matrix, replacing "-" and non-numeric with np.nan
     matrix = []
     for i, row in df.iterrows():
@@ -58,7 +58,7 @@ def show_grid_matplotlib(df, cmap='Reds', font_size=6):
 
     matrix = np.array(matrix)
     fig, ax = plt.subplots(figsize=(0.7*len(df.columns), 0.7*len(df.index)))
-    im = ax.imshow(matrix, cmap=cmap)
+    im = ax.imshow(matrix, cmap=cmap, vmin=0, vmax=1)
 
     # Show all ticks and label them with the respective list entries
     ax.set_xticks(np.arange(len(df.columns)))
@@ -87,6 +87,11 @@ def show_grid_matplotlib(df, cmap='Reds', font_size=6):
 def show_heatmaps(heatmaps, row_len=4, title_fontsize=8):
     """
     Displays the heatmaps using matplotlib, putting at most n_per_line per row.
+    Args:
+        heatmaps (dict): A dictionary where keys are filenames and values are heatmap arrays.
+            Example: {'AGAPIG/ANGRY': np.array([[...]]), 'FEDMAR/HAPPY': np.array([[...]])}
+        row_len (int): Number of heatmaps to display per row.
+        title_fontsize (int): Font size for the titles of the heatmaps.
     """
     n = len(heatmaps)
     ncols = min(row_len, n)
