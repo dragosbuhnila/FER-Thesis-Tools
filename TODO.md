@@ -1,8 +1,8 @@
-8) Fix the grid code (filename and path issue)
+8) ~~Fix the grid code (filename and path issue)~~
 
 9) Test the statistics functions by checking if a completely blue image and a completely white one actually have a difference of one
 
-5) Fix the scale of difference to go from 0 to 1 and check if a totally red and a totally blue actually have 1 as difference
+5) ~~Fix the scale of difference to go from 0 to 1 and check if a totally red and a totally blue actually have 1 as difference~~
 
 6) Add the baseface images behind the heatmaps
  

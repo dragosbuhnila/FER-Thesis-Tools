@@ -8,6 +8,7 @@ import cv2
 import pandas as pd
 import pickle
 
+from modules.filenames_utils import get_emotion_from_heatmap_relpath, try_extract_model_or_user_name
 from modules.models import BASEFACES_FOLDER, BaseFace
 from modules.roi_statistics import roi_mean, compare_meandif
 from modules.landmark_utils import LANDMARKS, detect_facial_landmarks, EMOTION_AUS, get_all_AUs, load_landmark_coordinates, save_landmark_coordinates
@@ -19,12 +20,28 @@ from modules.visualize import plot_matrix, print_aubyau_stats, show_grid_matplot
 # >=========== MACROS ===================================================================
 # >======================================================================================
 
-# choose between: roi_mean, roi_hist
-ROI_STAT_CHOSEN = roi_mean 
-COMPARE_CHOSEN = compare_meandif
+COMPARE_CHOSEN = compare_meandif    # e.g. choose between: compare_meandif, compare_hist
+ROI_STAT_CHOSEN = roi_mean          # e.g. choose between: roi_mean, roi_hist
+STAT_NAMES = {"roi_mean": "mean"}[ROI_STAT_CHOSEN.__name__] # e.g. "mean", "mean-std", "hist", etc.
 
 DO_DEBUG = True  # Set to True to enable debug mode
 SAVE_ONLY = False  # Set to True to save results without displaying plots
+
+HUMAN_RESULTS_DIR = os.path.join(".", "saliency_maps", "human_Results")
+
+USE_MENU = True  # Set to False to skip the menu and run directly
+CHOICE = "1"  # Default choice if USE_MENU is False
+
+# print(f"chosen macros are:")
+# print(f"COMPARE_CHOSEN: {COMPARE_CHOSEN.__name__}")
+# print(f"ROI_STAT_CHOSEN: {ROI_STAT_CHOSEN.__name__}")
+# print(f"STAT_NAMES: {STAT_NAMES}")
+# print(f"DO_DEBUG: {DO_DEBUG}")
+# print(f"SAVE_ONLY: {SAVE_ONLY}")
+# print(f"HUMAN_RESULTS_DIR: {HUMAN_RESULTS_DIR}")
+# print(f"USE_MENU: {USE_MENU}")
+# print(f"CHOICE: {CHOICE}")
+# exit()
 
 # <======================================================================================
 # <=========== END OF MACROS ============================================================
@@ -54,9 +71,9 @@ if os.path.exists(testers_ranking_path):
         testers_ranking = sorted(testers_ranking, key=lambda x: x[1], reverse=True)  # resort to be sure
         testers_ranking = [tester_name for tester_name, _ in testers_ranking]  # keep only names
 
-print(f"Loaded testers' ranking from {testers_ranking_path}. Found {len(testers_ranking)} testers:")
-for rank, tester in enumerate(testers_ranking, 1):
-    print(f"{rank:2d}. {tester}")
+# print(f"Loaded testers' ranking from {testers_ranking_path}. Found {len(testers_ranking)} testers:")
+# for rank, tester in enumerate(testers_ranking, 1):
+#     print(f"{rank:2d}. {tester}")
 
 
 # <======================================================================================
@@ -72,18 +89,6 @@ def get_base_face(emotion):
     if emotion.upper() not in basefaces.keys():
         raise ValueError(f"Emotion {emotion} does not have a corresponding base face.")
     return basefaces[emotion.upper()]
-
-def get_emotion_from_heatmap_fname(heatmap_fname):
-    """
-    Extracts the emotion from the heatmap filename.
-    For now, assumes the filename format is like "DISGUST_Neutral.npy" or "DISGUST_canonical.npy".
-    """
-    parts = heatmap_fname.split('_')
-    if len(parts) != 2:
-        raise ValueError(f"Heatmap filename {heatmap_fname} does not follow the expected format.")
-    if parts[0].upper() not in ["ANGRY", "DISGUST", "FEAR", "HAPPY", "NEUTRAL", "SAD", "SURPRISE"]:
-        raise ValueError(f"Unknown emotion {parts[0]} in heatmap filename {heatmap_fname}.")
-    return parts[0]
 
 def compute_masked_heatmaps(heatmap, heatmap_fname, AUs, emotion, debug=False):
     baseFace = get_base_face(emotion)
@@ -111,43 +116,81 @@ def compute_masked_heatmaps(heatmap, heatmap_fname, AUs, emotion, debug=False):
 
     return masked_heatmaps
 
-def get_stats_cache_path(heatmap_fname, folder_path, stat_names: str):
+def get_stats_cache_path(heatmap_relpath, stat_names: str):
+    """
+    Generates a path for caching statistics of a heatmap.
+    Args:
+        heatmap_relpath (str): The relative path of the heatmap file.
+            Example: "saliency_maps/results/subject/heatmaps/heatmap_1.npy"
+        stat_names (str): A string representing the names of the statistics to cache.
+            Example: "mean", "mean-std", "hist", etc.
+    Returns:
+        str: The path where the statistics will be cached.
+    """
+    heatmap_fname = os.path.basename(heatmap_relpath)
+    folder_path = os.path.dirname(heatmap_relpath)
+
     cache_dir = os.path.join(folder_path, "stats_cache")
     os.makedirs(cache_dir, exist_ok=True)
     return os.path.join(cache_dir, f"{heatmap_fname}_stat-{stat_names}.pkl")
 
-def save_statistics(heatmap_fname, folder_path, statistics):
+def save_statistics(heatmap_relpath, statistics):
     stat_names = [stat_name for stat_name in next(iter(statistics.values())).keys()]
     print(f"stat_names are {stat_names}")
-    path = get_stats_cache_path(heatmap_fname, folder_path, "-".join(stat_names))
+    path = get_stats_cache_path(heatmap_relpath, "-".join(stat_names))
     with open(path, "wb") as f:
         pickle.dump(statistics, f)
 
-def load_statistics(heatmap_fname, folder_path, stat_names: str = "mean"):
-    path = get_stats_cache_path(heatmap_fname, folder_path, stat_names)
+def load_statistics(heatmap_relpath, stat_names):
+    path = get_stats_cache_path(heatmap_relpath, stat_names)
     if os.path.exists(path):
         with open(path, "rb") as f:
             return pickle.load(f)
     return None
 
-def compute_heatmap_statistics(heatmap, heatmap_fname, folder_path, compute_stat, debug=False):
-    fname_long = os.path.join(folder_path.split("/")[-1].split("\\")[1], heatmap_fname)
+def compute_heatmap_statistics(heatmap, heatmap_relpath, compute_stat, stat_names, debug=False):
+    """
+    Computes statistics for a given heatmap.
+    Args:
+        heatmap (np.ndarray): The heatmap to compute statistics for.
+        heatmap_relpath (str): The relative path of the heatmap file.
+            Example: "saliency_maps/results/subject/heatmaps/heatmap_1.npy"
+        compute_stat (function): The function to compute the statistic.
+            Example: roi_mean, roi_mean_std, roi_hist, etc.
+        debug (bool): If True, will print debug information and plot the heatmap.
+        stat_names (str): A string representing the names of the statistics to compute.
+            Example: "mean", "mean-std", "hist", etc.
+    Returns:
+        tuple: A tuple containing:
+            - statistics (dict): The computed statistics for each AU.
+                Example: {"mean": 0.1234} or {"mean": 0.1234, "std": 0.5678} or {"AU1": {"hist": [0.1, 0.2, 0.3], "mean": 0.1234}, ...}
+            - subject (str): The subject name extracted from the heatmap path.
+                Example: "AGAPIG"
+            - emotion (str): The emotion extracted from the heatmap filename.
+                Example: "DISGUST"
+    Raises:
+        ValueError: If the heatmap is not a 2D array or if the heatmap filename does not follow the expected format.
+    """
+    subject = try_extract_model_or_user_name(heatmap_relpath)
+    emotion = get_emotion_from_heatmap_relpath(heatmap_relpath)
+    print(f"debug is {debug}, ")
+
     if heatmap.ndim != 2:
-        raise ValueError(f"Heatmap {fname_long} is not a 2D array. Please check the file format.")
+        raise ValueError(f"Heatmap {subject}/{emotion} is not a 2D array. Please check the file format.")
 
     # 0) Try to load stat if already cached
-    cached = load_statistics(heatmap_fname, folder_path)
-    if cached is not None:
-        print(f"Loaded cached statistics for {fname_long}")
-        return cached
+    cached_statistics = load_statistics(heatmap_relpath, stat_names=stat_names)
+    if cached_statistics is not None:
+        print(f"Loaded cached statistics for {subject}/{emotion}")
+        return cached_statistics, subject, emotion
+    print(f"Cache unavailable: computing statistics for heatmap {subject}/{emotion}.")
 
     if debug:
-        print(f"Shape of heatmap {fname_long}: {heatmap.shape}")
-        plot_matrix(heatmap, title=f"Heatmap for {fname_long}")
+        print(f"Shape of heatmap {subject}/{emotion}: {heatmap.shape}")
+        plot_matrix(heatmap, title=f"Heatmap for {subject}/{emotion}")
 
     # 1) Compute the masked heatmaps ROI by ROI
-    emotion = get_emotion_from_heatmap_fname(heatmap_fname)
-    masked_heatmaps = compute_masked_heatmaps(heatmap, fname_long, get_all_AUs(), emotion, debug=debug)
+    masked_heatmaps = compute_masked_heatmaps(heatmap, f"{subject}/{emotion}", get_all_AUs(), emotion, debug=debug)
 
     # 2) Compute statistic
     statistics = {}
@@ -156,47 +199,49 @@ def compute_heatmap_statistics(heatmap, heatmap_fname, folder_path, compute_stat
         statistics[au] = stat
 
     # 3) Cache the statistics
-    save_statistics(heatmap_fname, folder_path, statistics)
+    save_statistics(heatmap_relpath, statistics)
 
-    return statistics
+    return statistics, subject, emotion
 
-def do_group_comparison(heatmaps_folder_paths, heatmap_fnames, debug=False, save_only=False):
-    fnames_long = [os.path.join(folder_path.split("/")[-1].split("\\")[1], fname) for folder_path, fname in zip(heatmaps_folder_paths, heatmap_fnames)]
-    fnames_full = [os.path.join(folder_path, fname) for folder_path, fname in zip(heatmaps_folder_paths, heatmap_fnames)]
-
-    print(f"fnames_long: {fnames_long}")
-    print(f"fnames_full: {fnames_full}")
-
-    heatmaps = {fname_long: np.load(fname_full) for fname_long, fname_full in zip(fnames_long, fnames_full)}
-
+def do_group_comparison(heatmaps_relpaths, debug=False, save_only=False):
     # Compute statistics for all heatmaps
-    stats_list = {fname_long: compute_heatmap_statistics(heatmaps[fname_long], fname, folder_path, ROI_STAT_CHOSEN, debug=debug) for fname, folder_path, fname_long in zip(heatmap_fnames, heatmaps_folder_paths, fnames_long)}
+    unique_heatmap_names = []   
+    heatmaps = {}
+    stats_list = {}
+    for heatmap_relpath in heatmaps_relpaths:
+        heatmap = np.load(heatmap_relpath)
+        statistics, subject, emotion = compute_heatmap_statistics(heatmap, heatmap_relpath, ROI_STAT_CHOSEN, STAT_NAMES, debug=debug)
+        unique_heatmap_name = f"{subject}/{emotion}"
+        
+        unique_heatmap_names.append(unique_heatmap_name)
+        heatmaps[unique_heatmap_name] = heatmap
+        stats_list[unique_heatmap_name] = statistics
 
     # Create a grid using pandas DataFrame
-    grid = pd.DataFrame(index=fnames_long, columns=fnames_long)
+    grid = pd.DataFrame(index=unique_heatmap_names, columns=unique_heatmap_names)
 
-    for fname1, fname2 in itertools.combinations(fnames_long, 2):
-        result = COMPARE_CHOSEN(stats_list[fname1], stats_list[fname2])
+    for heatmap_name1, heatmap_name2 in itertools.combinations(unique_heatmap_names, 2):
+        result = COMPARE_CHOSEN(stats_list[heatmap_name1], stats_list[heatmap_name2])
         # If result is a dict, get the first value
         if isinstance(result, dict):
             val = next(iter(result.values()))
         else:
             val = result
-        grid.loc[fname1, fname2] = f"{val:.4f}"  # Fill the asymmetric cell
-        grid.loc[fname2, fname1] = f"{val:.4f}"  # Fill the symmetric cell
+        grid.loc[heatmap_name1, heatmap_name2] = f"{val:.4f}"  # Fill the asymmetric cell
+        grid.loc[heatmap_name2, heatmap_name1] = f"{val:.4f}"  # Fill the symmetric cell
 
     # Fill diagonal with "-"
-    for fname in heatmap_fnames:
-        result = COMPARE_CHOSEN(stats_list[fname1], stats_list[fname2])
+    for heatmap_name in unique_heatmap_names:
+        result = COMPARE_CHOSEN(stats_list[heatmap_name], stats_list[heatmap_name])
         # If result is a dict, get the first value
         if isinstance(result, dict):
             val = next(iter(result.values()))
         else:
             val = result
-        grid.loc[fname, fname] = f"{val:.4f}"
+        grid.loc[heatmap_name, heatmap_name] = f"{val:.4f}"
 
     if save_only:
-        print(f"Not displaying plt for heatmaps: {', '.join(heatmap_fnames)}")
+        print(f"Not displaying plt for heatmaps: {', '.join(unique_heatmap_names)}")
         return grid
     else:
         show_heatmaps(heatmaps)
@@ -209,15 +254,10 @@ def do_group_comparison(heatmaps_folder_paths, heatmap_fnames, debug=False, save
 # <=========== END OF FUNCTIONS =========================================================
 # <======================================================================================
 
-USE_MENU = True  # Set to False to skip the menu and run directly
-CHOICE = "1"  # Default choice if USE_MENU is False
-
 if __name__ == "__main__":
-    human_results_dir = "./saliency_maps/human_Results"
-
     testers = [
-        d for d in os.listdir(human_results_dir)
-        if os.path.isdir(os.path.join(human_results_dir, d))
+        d for d in os.listdir(HUMAN_RESULTS_DIR)
+        if os.path.isdir(os.path.join(HUMAN_RESULTS_DIR, d))
     ]
 
     EMOTIONS = ["ANGRY", "DISGUST", "FEAR", "HAPPY", "NEUTRAL", "SAD", "SURPRISE"]
@@ -243,7 +283,7 @@ if __name__ == "__main__":
                 print(f"  >> Error: '{tester}' not found. Try again.")
                 continue
 
-            heatmaps_path = os.path.join(human_results_dir, tester, "heatmaps")
+            heatmaps_path = os.path.join(HUMAN_RESULTS_DIR, tester, "heatmaps")
             if not os.path.isdir(heatmaps_path):
                 print(f"  >> Error: heatmaps folder '{heatmaps_path}' missing.")
                 continue
@@ -256,7 +296,9 @@ if __name__ == "__main__":
                 print(f"  >> No canonical.npy files in '{heatmaps_path}'.")
                 continue
 
-            do_group_comparison([heatmaps_path]*len(heatmap_fnames), heatmap_fnames, debug=DO_DEBUG, save_only=SAVE_ONLY)
+            heatmaps_relpaths = [os.path.join(heatmaps_path, fname) for fname in heatmap_fnames]
+            print(f"heatmaps_relpaths: {heatmaps_relpaths}")
+            do_group_comparison(heatmaps_relpaths, debug=DO_DEBUG, save_only=SAVE_ONLY)
 
         elif choice == "2":
             # Select emotion
@@ -291,7 +333,7 @@ if __name__ == "__main__":
             heatmaps_paths = []
             heatmap_fnames = []
             for tester in topX_performers:
-                heatmaps_path = os.path.join(human_results_dir, tester, "heatmaps")
+                heatmaps_path = os.path.join(HUMAN_RESULTS_DIR, tester, "heatmaps")
                 if not os.path.isdir(heatmaps_path):    
                     print(f"  >> Error: heatmaps folder '{heatmaps_path}' missing for tester '{tester}'.")
                     continue
@@ -303,7 +345,9 @@ if __name__ == "__main__":
                     heatmaps_paths.pop()
                     heatmap_fnames.pop()
 
-            do_group_comparison(heatmaps_paths, heatmap_fnames, debug=DO_DEBUG, save_only=SAVE_ONLY)
+            heatmaps_relpaths = [os.path.join(path, fname) for path, fname in zip(heatmaps_paths, heatmap_fnames)]
+            print(f"heatmaps_relpaths: {heatmaps_relpaths}")
+            do_group_comparison(heatmaps_relpaths, debug=DO_DEBUG, save_only=SAVE_ONLY)
 
         elif choice == "3":
             print("  >> Option not implemented yet.")
