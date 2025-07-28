@@ -1,0 +1,9 @@
+.venv
+
+bosphorus_test_HQ/
+landmark_coordinates/
+output_images/
+saliency_maps/
+roi_matrices/
+
+__pycache__

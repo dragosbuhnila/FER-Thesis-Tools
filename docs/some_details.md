@@ -1,0 +1,1 @@
+At some point I broke the landmark coordinates but I didn't ever find the courage to spend that quarter of an hour to fix it back again, so there's a few extra folders to go through to reach the various landmarks. The functions still work perfectly though, that's why I left it as it is.
