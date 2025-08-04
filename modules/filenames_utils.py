@@ -6,6 +6,10 @@ def try_extract_model_or_user_name(heatmap_relative_path):
         If human side, the path is like: "saliency_maps/results/subject/heatmaps/heatmap_1.npy"
         If machine side, TODO
     """
+    # std_relative_map case
+    if "std_saliency_map" in heatmap_relative_path:
+        return "std_saliency_map"
+
     heatmap_relative_path_parts = list(Path(heatmap_relative_path).parts)
     h = heatmap_relative_path_parts
 
@@ -19,6 +23,9 @@ def get_emotion_from_heatmap_relpath(heatmap_relative_path):
     Extracts the emotion from the heatmap filename.
     For now, assumes the filename format is like "DISGUST_Neutral.npy" or "DISGUST_canonical.npy".
     """
+    if "std_saliency_map" in heatmap_relative_path:
+        return heatmap_relative_path.split('/')[-1].split('_')[-1].split('.')[0].upper()
+
     heatmap_relative_path_parts = list(Path(heatmap_relative_path).parts)
     heatmap_fname = heatmap_relative_path_parts[-1]
 

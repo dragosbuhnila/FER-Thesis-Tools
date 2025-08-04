@@ -1,17 +1,20 @@
 from matplotlib import pyplot as plt
 import tkinter as tk
 from tkinter import ttk
-
 import numpy as np
+import cv2
 
-def plot_matrix(matrix, title="No Title", cmap='jet'):
+from modules.basefaces import get_base_face, basefaces
+
+def plot_matrix(matrix, title="No Title", cmap='turbo', vmin=None, vmax=None, block=True):
     """
     Plots a 2D matrix as an image.
     """
-    plt.imshow(matrix, cmap=cmap, interpolation='nearest')
+    plt.figure()
+    plt.imshow(matrix, cmap=cmap, interpolation='nearest', vmin=vmin, vmax=vmax)
     plt.title(title)
     plt.colorbar()
-    plt.show()
+    plt.show(block=block)
 
 def print_aubyau_stats(statistics, title):
     """
@@ -84,26 +87,45 @@ def show_grid_matplotlib(df, cmap='plasma', font_size=6):
     plt.tight_layout()
     plt.show(block=False)
 
-def show_heatmaps(heatmaps, row_len=4, title_fontsize=8):
+def show_heatmaps(heatmaps, row_len=4, title_fontsize=8, alpha=0.5):
     """
-    Displays the heatmaps using matplotlib, putting at most n_per_line per row.
+    Displays the heatmaps using matplotlib, overlaying each on its base face image.
     Args:
-        heatmaps (dict): A dictionary where keys are filenames and values are heatmap arrays.
-            Example: {'AGAPIG/ANGRY': np.array([[...]]), 'FEDMAR/HAPPY': np.array([[...]])}
-        row_len (int): Number of heatmaps to display per row.
-        title_fontsize (int): Font size for the titles of the heatmaps.
+        heatmaps (dict): Keys are filenames (should contain emotion), values are heatmap arrays.
+        row_len (int): Number of heatmaps per row.
+        title_fontsize (int): Font size for subplot titles.
+        alpha (float): Transparency of the heatmap overlay (0=only image, 1=only heatmap).
     """
     n = len(heatmaps)
     ncols = min(row_len, n)
     nrows = (n + ncols - 1) // ncols
 
     fig, axs = plt.subplots(nrows, ncols, figsize=(5 * ncols, 5 * nrows))
-    axs = np.array(axs).reshape(-1)  # Flatten in case nrows or ncols is 1
+    axs = np.array(axs).reshape(-1)
 
     for i, (fname, heatmap) in enumerate(heatmaps.items()):
-        axs[i].imshow(heatmap, cmap='jet', interpolation='nearest')
+        # Extract emotion from fname (assumes format like 'AGAPIG/ANGRY' or 'ANGRY_canonical.npy')
+        if "/" in fname:
+            emotion = fname.split("/")[-1].split("_")[0]
+        else:
+            emotion = fname.split("_")[0]
+
+        # Get the base face image for this emotion. If the emotion is not found, use NEUTRAL default.
+        base_face = get_base_face(emotion)
+        img = base_face.image
+        # Convert BGR (OpenCV) to RGB for matplotlib
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        axs[i].imshow(img_rgb, interpolation='nearest')
+
+        # Overlay the heatmap (assume heatmap is normalized 0-1, resize if needed)
+        if img is not None and heatmap.shape[:2] != img.shape[:2]:
+            heatmap_resized = cv2.resize(heatmap, (img.shape[1], img.shape[0]))
+        else:
+            heatmap_resized = heatmap
+
+        axs[i].imshow(heatmap_resized, cmap='turbo', alpha=alpha, interpolation='nearest', vmin=0, vmax=1)
         axs[i].set_title(fname, fontsize=title_fontsize)
-        axs[i].axis('off')  # Hide axes
+        axs[i].axis('off')
 
     # Hide unused axes
     for j in range(i + 1, len(axs)):

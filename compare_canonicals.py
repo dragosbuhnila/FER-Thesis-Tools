@@ -8,8 +8,9 @@ import cv2
 import pandas as pd
 import pickle
 
+from modules.basefaces import get_base_face
 from modules.filenames_utils import get_emotion_from_heatmap_relpath, try_extract_model_or_user_name
-from modules.models import BASEFACES_FOLDER, BaseFace
+
 from modules.roi_statistics import roi_mean, compare_meandif
 from modules.landmark_utils import LANDMARKS, detect_facial_landmarks, EMOTION_AUS, get_all_AUs, load_landmark_coordinates, save_landmark_coordinates
 from modules.mask_utils import compute_mask_alpha, get_roi_matrix
@@ -24,24 +25,27 @@ COMPARE_CHOSEN = compare_meandif    # e.g. choose between: compare_meandif, comp
 ROI_STAT_CHOSEN = roi_mean          # e.g. choose between: roi_mean, roi_hist
 STAT_NAMES = {"roi_mean": "mean"}[ROI_STAT_CHOSEN.__name__] # e.g. "mean", "mean-std", "hist", etc.
 
-DO_DEBUG = True  # Set to True to enable debug mode
+DO_DEBUG = False  # Set to True to enable debug mode
+DEEP_DEBUG = False  # Set to True to enable deep debug mode (e.g. plotting masked heatmaps)
+FORCE_RECALCULATE_STATS = False
+
+SALIENCY_MAPS_DIR = os.path.join(".", "saliency_maps")
+HUMAN_RESULTS_DIR = os.path.join(SALIENCY_MAPS_DIR, "human_Results")
+
+RUN_ON_ALL_TESTERS = False  # Set to False to skip the menu and run directly
 SAVE_ONLY = False  # Set to True to save results without displaying plots
-
-HUMAN_RESULTS_DIR = os.path.join(".", "saliency_maps", "human_Results")
-
-USE_MENU = True  # Set to False to skip the menu and run directly
 CHOICE = "1"  # Default choice if USE_MENU is False
 
-# print(f"chosen macros are:")
-# print(f"COMPARE_CHOSEN: {COMPARE_CHOSEN.__name__}")
-# print(f"ROI_STAT_CHOSEN: {ROI_STAT_CHOSEN.__name__}")
-# print(f"STAT_NAMES: {STAT_NAMES}")
-# print(f"DO_DEBUG: {DO_DEBUG}")
-# print(f"SAVE_ONLY: {SAVE_ONLY}")
-# print(f"HUMAN_RESULTS_DIR: {HUMAN_RESULTS_DIR}")
-# print(f"USE_MENU: {USE_MENU}")
-# print(f"CHOICE: {CHOICE}")
-# exit()
+if DO_DEBUG == True:
+    print(f"chosen macros are:")
+    print(f"COMPARE_CHOSEN: {COMPARE_CHOSEN.__name__}")
+    print(f"ROI_STAT_CHOSEN: {ROI_STAT_CHOSEN.__name__}")
+    print(f"STAT_NAMES: {STAT_NAMES}")
+    print(f"DO_DEBUG: {DO_DEBUG}")
+    print(f"SAVE_ONLY: {SAVE_ONLY}")
+    print(f"HUMAN_RESULTS_DIR: {HUMAN_RESULTS_DIR}")
+    print(f"RUN_ON_ALL_TESTERS: {RUN_ON_ALL_TESTERS}")
+    print(f"CHOICE: {CHOICE}")
 
 # <======================================================================================
 # <=========== END OF MACROS ============================================================
@@ -51,17 +55,6 @@ CHOICE = "1"  # Default choice if USE_MENU is False
 # >======================================================================================
 # >=========== GLOBAL VARIABLES =========================================================
 # >======================================================================================
-
-# 1) Load basefaces
-baseface_fnames = [base_face_fname for base_face_fname in os.listdir(BASEFACES_FOLDER) if base_face_fname.endswith('reshaped.png')]
-if len(baseface_fnames) != 7:
-    raise ValueError(f"Expected 7 basefaces, found {len(baseface_fnames)}. Please check the basefaces directory.")
-
-basefaces = {}
-for baseface_fname in baseface_fnames:
-    selected_emotion = baseface_fname.split('_')[1].upper()  # Assuming the filename format is like "baseface_emotion_reshaped.png"
-    basefaces[selected_emotion] = BaseFace(baseface_fname)
-    # print(f"Loaded base face for emotion {emotion}. {basefaces[emotion]}")
 
 # 2) Load testers' ranking
 testers_ranking_path = "./saliency_maps/human_Results/testers_ranking.pkl"
@@ -85,12 +78,9 @@ if os.path.exists(testers_ranking_path):
 # >=========== FUNCTIONS ================================================================
 # >======================================================================================
 
-def get_base_face(emotion):
-    if emotion.upper() not in basefaces.keys():
-        raise ValueError(f"Emotion {emotion} does not have a corresponding base face.")
-    return basefaces[emotion.upper()]
-
 def compute_masked_heatmaps(heatmap, heatmap_fname, AUs, emotion, debug=False):
+    if emotion.upper() == "ONES" or emotion.upper() == "ZEROES":
+        emotion = "NEUTRAL"  # treat "ones" and "zeroes" as neutral for masking purposes
     baseFace = get_base_face(emotion)
     all_landmarks = baseFace.landmarks
     base_face_shape = baseFace.shape
@@ -107,6 +97,8 @@ def compute_masked_heatmaps(heatmap, heatmap_fname, AUs, emotion, debug=False):
             roi_matrix = get_roi_matrix(base_face_shape, landmark_coordinates, fill=is_closed_loop, debug=debug)
             roi_matrix = cv2.resize(roi_matrix, (heatmap.shape[1], heatmap.shape[0]), interpolation=cv2.INTER_LINEAR)
             roi_matrix[roi_matrix > 0] = 1  # Ensure binary mask
+            roi_matrix = roi_matrix.astype(float)
+            roi_matrix[roi_matrix != 1] = np.nan
 
             masked_heatmap = heatmap * roi_matrix
             masked_heatmaps[au] = masked_heatmap
@@ -148,7 +140,7 @@ def load_statistics(heatmap_relpath, stat_names):
             return pickle.load(f)
     return None
 
-def compute_heatmap_statistics(heatmap, heatmap_relpath, compute_stat, stat_names, debug=False):
+def compute_heatmap_statistics(heatmap, heatmap_relpath, compute_stat, stat_names, debug=False, force_recalculate=False):
     """
     Computes statistics for a given heatmap.
     Args:
@@ -179,7 +171,10 @@ def compute_heatmap_statistics(heatmap, heatmap_relpath, compute_stat, stat_name
         raise ValueError(f"Heatmap {subject}/{emotion} is not a 2D array. Please check the file format.")
 
     # 0) Try to load stat if already cached
-    cached_statistics = load_statistics(heatmap_relpath, stat_names=stat_names)
+    if not force_recalculate:
+        cached_statistics = load_statistics(heatmap_relpath, stat_names=stat_names)
+    else:
+        cached_statistics = None
     if cached_statistics is not None:
         print(f"Loaded cached statistics for {subject}/{emotion}")
         return cached_statistics, subject, emotion
@@ -190,27 +185,35 @@ def compute_heatmap_statistics(heatmap, heatmap_relpath, compute_stat, stat_name
         plot_matrix(heatmap, title=f"Heatmap for {subject}/{emotion}")
 
     # 1) Compute the masked heatmaps ROI by ROI
-    masked_heatmaps = compute_masked_heatmaps(heatmap, f"{subject}/{emotion}", get_all_AUs(), emotion, debug=debug)
+    masked_heatmaps = compute_masked_heatmaps(heatmap, f"{subject}/{emotion}", get_all_AUs(), emotion, debug=DEEP_DEBUG)
+    print(f"Computed masked heatmaps for {subject}/{emotion} with {len(masked_heatmaps)} AUs.")
 
     # 2) Compute statistic
     statistics = {}
     for au, masked_heatmap in masked_heatmaps.items():
+        # save the masked heatmap in the masked_heatmaps/subject/emotion/ folder
+        masked_heatmap_path = os.path.join(os.path.dirname(heatmap_relpath), "masked_heatmaps", subject, emotion, f"{au}_masked.npy")
+        os.makedirs(os.path.dirname(masked_heatmap_path), exist_ok=True)
+        np.save(masked_heatmap_path, masked_heatmap)
+        print(f"Saved masked heatmap for AU {au} at {masked_heatmap_path}")
+
         stat = compute_stat(masked_heatmap)
         statistics[au] = stat
+        print(f"Computed {stat_names} for AU {au}: {stat}")
 
     # 3) Cache the statistics
     save_statistics(heatmap_relpath, statistics)
 
     return statistics, subject, emotion
 
-def do_group_comparison(heatmaps_relpaths, debug=False, save_only=False):
+def do_group_comparison(heatmaps_relpaths, debug=False, save_only=False, force_recalculate_stats=False):
     # Compute statistics for all heatmaps
     unique_heatmap_names = []   
     heatmaps = {}
     stats_list = {}
     for heatmap_relpath in heatmaps_relpaths:
         heatmap = np.load(heatmap_relpath)
-        statistics, subject, emotion = compute_heatmap_statistics(heatmap, heatmap_relpath, ROI_STAT_CHOSEN, STAT_NAMES, debug=debug)
+        statistics, subject, emotion = compute_heatmap_statistics(heatmap, heatmap_relpath, ROI_STAT_CHOSEN, STAT_NAMES, debug=debug, force_recalculate=force_recalculate_stats)
         unique_heatmap_name = f"{subject}/{emotion}"
         
         unique_heatmap_names.append(unique_heatmap_name)
@@ -264,8 +267,9 @@ if __name__ == "__main__":
 
 
     for tester in testers:
-        if USE_MENU:
+        if not RUN_ON_ALL_TESTERS:
             print("\n=== Main Menu ===")
+            print("0) Test metric between a full-blue and a full-red heatmap")
             print("1) Single Person")
             print("2) Top%, and Emotion")
             print("3) Top% + Gender, and Emotion (not implemented)")
@@ -274,8 +278,22 @@ if __name__ == "__main__":
         else:
             choice = CHOICE
 
-        if choice == "1":
-            if USE_MENU:
+        if choice == "0":
+            heatmaps_relpaths = [
+                os.path.join(SALIENCY_MAPS_DIR, "std_saliency_map_ones.npy"),
+                os.path.join(SALIENCY_MAPS_DIR, "std_saliency_map_zeroes.npy")
+            ]
+
+            for heatmap_relpath in heatmaps_relpaths:
+                if not os.path.isfile(heatmap_relpath):
+                    print(f"  >> Error: heatmap file '{heatmap_relpath}' not found.")
+                    continue
+
+            print(f"Comparing heatmaps: {heatmaps_relpaths[0]} and {heatmaps_relpaths[1]}")
+            do_group_comparison(heatmaps_relpaths, debug=DO_DEBUG, force_recalculate_stats=True)
+            continue
+        elif choice == "1":
+            if not RUN_ON_ALL_TESTERS:
                 print(f"Available IDs: {', '.join(testers)}")
                 tester = input("Enter Person ID: ").strip().upper()
 
@@ -298,7 +316,7 @@ if __name__ == "__main__":
 
             heatmaps_relpaths = [os.path.join(heatmaps_path, fname) for fname in heatmap_fnames]
             print(f"heatmaps_relpaths: {heatmaps_relpaths}")
-            do_group_comparison(heatmaps_relpaths, debug=DO_DEBUG, save_only=SAVE_ONLY)
+            do_group_comparison(heatmaps_relpaths, debug=DO_DEBUG, save_only=SAVE_ONLY, force_recalculate_stats=FORCE_RECALCULATE_STATS)
 
         elif choice == "2":
             # Select emotion
@@ -347,7 +365,7 @@ if __name__ == "__main__":
 
             heatmaps_relpaths = [os.path.join(path, fname) for path, fname in zip(heatmaps_paths, heatmap_fnames)]
             print(f"heatmaps_relpaths: {heatmaps_relpaths}")
-            do_group_comparison(heatmaps_relpaths, debug=DO_DEBUG, save_only=SAVE_ONLY)
+            do_group_comparison(heatmaps_relpaths, debug=DO_DEBUG, save_only=SAVE_ONLY, force_recalculate_stats=FORCE_RECALCULATE_STATS)
 
         elif choice == "3":
             print("  >> Option not implemented yet.")

@@ -4,7 +4,7 @@
 
 5) ~~Fix the scale of difference to go from 0 to 1 and check if a totally red and a totally blue actually have 1 as difference~~
 
-6) Add the baseface images behind the heatmaps
+6) ~~Add the baseface images behind the heatmaps~~
  
 7) Add the roi lines eventually but idk too expensive
 

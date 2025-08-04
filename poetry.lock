@@ -653,6 +653,23 @@ numpy = {version = ">=1.26.0", markers = "python_version >= \"3.12\" and python_
 dev = ["absl-py", "pyink", "pylint (>=2.6.0)", "pytest", "pytest-xdist"]
 
 [[package]]
+name = "mplcursors"
+version = "0.6"
+description = "Interactive data selection cursors for Matplotlib."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "mplcursors-0.6-py3-none-any.whl", hash = "sha256:2d900267848378987c46ad2504ea484e274adbb596a71547c5c95d2b4f520a56"},
+    {file = "mplcursors-0.6.tar.gz", hash = "sha256:775217cd09965bb17179c0cd0fb123fed4f4f00d7ade7e7e8788a6581fb2c8a9"},
+]
+
+[package.dependencies]
+matplotlib = ">=3.1,<3.7.1 || >3.7.1"
+
+[package.extras]
+docs = ["pandas", "pydata-sphinx-theme (!=0.10.1)", "sphinx", "sphinx-gallery"]
+
+[[package]]
 name = "numpy"
 version = "1.26.4"
 description = "Fundamental package for array computing in Python"
@@ -1169,4 +1186,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "b90f555c596eda47c795e0215059f107df2f36a801774b3835827cdb62343974"
+content-hash = "7e832661b7189510867270fba03320aa418c9dbb28e3eb968bb85e98b9d44fc2"

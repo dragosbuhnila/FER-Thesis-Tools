@@ -178,60 +178,32 @@ def get_roi_matrix(image_shape, landmark_coordinates, fill,
               debug=False):
     """
     Draw a smoothly-connected, expanded black mask with a distance-based transparency fade.
-
-    Parameters
-    ----------
-    image : np.ndarray
-        BGR image to draw on.
-    landmark_coordinates : list of (x, y)
-        Points to connect in order.
-    expansion : int, default=15
-        How far the base line/polygon is dilated (thickness in px).
-    blur_radius : int or None, default=None
-        Radius of Gaussian blur before dilation; if None, uses max(1, expansion//2).
-    fill : bool, default=False
-        If True, fills the polygon defined by `landmark_coordinates` before blur/dilate.
-    fade_start : int or None, default=None
-        Distance (in px) from the dilated mask at which fading begins (fully opaque inside).
-        If None, defaults to expansion//2.
-    fade_end : int or None, default=None
-        Distance (in px) from the dilated mask at which fading finishes (fully transparent outside).
-        If None, defaults to expansion.
-
-    Returns
-    -------
-    out : np.ndarray
-        Copy of `image` with the mask region painted black, fading to transparent.
     """
-    # Prepare single-channel mask
     h, w = image_shape[:2]
     mask = np.zeros((h, w), dtype=np.uint8)
     pts = np.array(landmark_coordinates, dtype=np.int32).reshape(-1,1,2)
 
+    debug_imgs = []
+    debug_titles = []
+
     if debug:
-        plt.imshow(mask, cmap='hot', interpolation='nearest')
-        plt.title(f"Mask @ step 0")
-        plt.colorbar()
-        plt.show()
+        debug_imgs.append(mask.copy())
+        debug_titles.append("Mask @ step 0")
 
     # 1) Draw line
     cv2.polylines(mask, [pts], isClosed=False, color=255,
                   thickness=1, lineType=cv2.LINE_AA)
 
     if debug:
-        plt.imshow(mask, cmap='hot', interpolation='nearest')
-        plt.title(f"Mask @ step 1")
-        plt.colorbar()
-        plt.show()
+        debug_imgs.append(mask.copy())
+        debug_titles.append("Mask @ step 1")
 
     # 2) Optional fill
     cv2.fillPoly(mask, [pts], color=255)
 
     if debug:
-        plt.imshow(mask, cmap='hot', interpolation='nearest')
-        plt.title(f"Mask @ step 2")
-        plt.colorbar()
-        plt.show()
+        debug_imgs.append(mask.copy())
+        debug_titles.append("Mask @ step 2")
 
     # 3) Blur to smooth
     if blur_radius is None:
@@ -241,19 +213,15 @@ def get_roi_matrix(image_shape, landmark_coordinates, fill,
     mask = cv2.GaussianBlur(mask, (blur_radius, blur_radius), sigmaX=0)
 
     if debug:
-        plt.imshow(mask, cmap='hot', interpolation='nearest')
-        plt.title(f"Mask @ step 3")
-        plt.colorbar()
-        plt.show()
+        debug_imgs.append(mask.copy())
+        debug_titles.append("Mask @ step 3")
 
     # 4) Threshold back to binary
     _, mask = cv2.threshold(mask, 10, 255, cv2.THRESH_BINARY)
 
     if debug:
-        plt.imshow(mask, cmap='hot', interpolation='nearest')
-        plt.title(f"Mask @ step 4")
-        plt.colorbar()
-        plt.show()
+        debug_imgs.append(mask.copy())
+        debug_titles.append("Mask @ step 4")
 
     # 5) Dilate
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,
@@ -261,10 +229,18 @@ def get_roi_matrix(image_shape, landmark_coordinates, fill,
     dilated = cv2.dilate(mask, kernel, iterations=1)
 
     if debug:
-        plt.imshow(dilated, cmap='hot', interpolation='nearest')
-        plt.title(f"Mask @ step 5")
-        plt.colorbar()
-        plt.show()
+        debug_imgs.append(dilated.copy())
+        debug_titles.append("Mask @ step 5")
+
+        # Show all steps in one figure
+        n = len(debug_imgs)
+        plt.figure(figsize=(3*n, 3))
+        for i, (img, title) in enumerate(zip(debug_imgs, debug_titles)):
+            plt.subplot(1, n, i+1)
+            plt.imshow(img, cmap='hot', interpolation='nearest')
+            plt.title(title)
+            plt.axis('off')
+        plt.tight_layout()
         plt.show()
 
     return dilated
