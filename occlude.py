@@ -5,7 +5,7 @@ import random
 import matplotlib.pyplot as plt
 import cv2
 from modules.landmark_utils import detect_facial_landmarks, save_landmark_coordinates, load_landmark_coordinates
-from modules.mask_utils import mask_face_dots, mask_face_circles, mask_face_lines, apply_inverse_masks 
+from modules.mask_n_heatmap_utils import mask_face_dots, mask_face_lines, apply_inverse_masks 
 
 # ========================== SETTINGS ===========================================================================
 

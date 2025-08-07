@@ -2,6 +2,8 @@ import cv2
 from matplotlib import pyplot as plt
 import numpy as np
 
+from modules.visualize import plot_matrix
+
 DISPLAY_OPTIONS = {
     "default":  {"radius": 200.0, "axis_ratio": 0.45, "gradient_exp": 1.5},
     "AU1" :     {"radius": 200.0, "axis_ratio": 0.45, "gradient_exp": 1.5},
@@ -170,6 +172,88 @@ def mask_face_lines(image, landmark_coordinates,
 
     return out.astype(np.uint8)
 
+
+
+def apply_inverse_masks(image, list_of_au_configs, mask_color=(0, 0, 0)):
+    """
+    image : np.ndarray, original BGR image
+    list_of_au_configs : list of dict, each with keys
+        landmark_coordinates, expansion, blur_radius, fill, fade_start, fade_end
+    """
+    def compute_mask_alpha(landmark_coordinates,
+                        image_shape,
+                        expansion=37,
+                        blur_radius=None,
+                        fill=False,
+                        fade_start=None,
+                        fade_end=None):
+        """
+        Compute a float alpha mask (0…1) for a dilated, faded band/polygon.
+
+        Returns
+        -------
+        alpha : np.ndarray, shape=(h,w), dtype=float32
+            Per-pixel opacity of the mask (1=fully keep; 0=fully black).
+        """
+        h, w = image_shape[:2]
+        # -- 1) build binary dilated mask exactly like before
+        mask = np.zeros((h, w), dtype=np.uint8)
+        pts = np.array(landmark_coordinates, dtype=np.int32).reshape(-1,1,2)
+        cv2.polylines(mask, [pts], isClosed=False, color=255,
+                    thickness=1, lineType=cv2.LINE_AA)
+        if fill:
+            cv2.fillPoly(mask, [pts], color=255)
+
+        if blur_radius is None:
+            blur_radius = max(1, expansion // 4)
+        if blur_radius % 2 == 0:
+            blur_radius += 1
+        mask = cv2.GaussianBlur(mask, (blur_radius, blur_radius), sigmaX=0)
+        _, mask = cv2.threshold(mask, 10, 255, cv2.THRESH_BINARY)
+
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,
+                                        (expansion, expansion))
+        dilated = cv2.dilate(mask, kernel, iterations=1)
+
+        # -- 2) distance-based fade
+        inv = cv2.bitwise_not(dilated)
+        dist = cv2.distanceTransform(inv, cv2.DIST_L2, 5)
+
+        if fade_start is None:
+            fade_start = expansion // 4
+        if fade_end is None:
+            fade_end = expansion * 2
+        span = max(1, fade_end - fade_start)
+
+        alpha = np.clip((fade_end - dist) / span, 0.0, 1.0).astype(np.float32)
+        alpha[dilated > 0] = 1.0
+
+        return alpha
+
+    h, w = image.shape[:2]
+    # start with zero alpha (fully black)
+    alpha_total = np.zeros((h, w), dtype=np.float32)
+
+    # accumulate each mask's alpha
+    for cfg in list_of_au_configs:
+        alpha = compute_mask_alpha(
+            cfg['landmark_coordinates'],
+            image.shape,
+            expansion=cfg.get('expansion', 37),
+            blur_radius=cfg.get('blur_radius'),
+            fill=cfg.get('fill'),
+            fade_start=cfg.get('fade_start'),
+            fade_end=cfg.get('fade_end'),
+        )
+        alpha_total = np.maximum(alpha_total, alpha)
+
+    # composite once
+    alpha_3ch = np.dstack([alpha_total]*3)
+    color_layer = np.full_like(image, mask_color, dtype=np.float32)
+    out = image.astype(np.float32) * alpha_3ch + color_layer * (1.0 - alpha_3ch)
+
+    return out.astype(np.uint8)
+
 def get_roi_matrix(image_shape, landmark_coordinates, fill,
               expansion=37,
               blur_radius=None,
@@ -186,6 +270,7 @@ def get_roi_matrix(image_shape, landmark_coordinates, fill,
     debug_imgs = []
     debug_titles = []
 
+    debug = False
     if debug:
         debug_imgs.append(mask.copy())
         debug_titles.append("Mask @ step 0")
@@ -245,82 +330,58 @@ def get_roi_matrix(image_shape, landmark_coordinates, fill,
 
     return dilated
 
-def compute_mask_alpha(landmark_coordinates,
-                       image_shape,
-                       expansion=37,
-                       blur_radius=None,
-                       fill=False,
-                       fade_start=None,
-                       fade_end=None):
+def compute_pixel_repetition_heatmap(masked_heatmaps, debug=False):
     """
-    Compute a float alpha mask (0…1) for a dilated, faded band/polygon.
+    Computes a heatmap showing the pixel repetition across all masked heatmaps.
+    Each pixel is incremented by 1 for each AU where it is not NaN.
+
+    Parameters
+    ----------
+    masked_heatmaps : dict of str -> np.ndarray
+        Dictionary where keys are AU names and values are masked heatmaps.
+        Example: {"AU1": np.ndarray, "AU2": np.ndarray, ...}
+    debug : bool, optional
+        If True, will plot the intermediate heatmaps for debugging.
 
     Returns
     -------
-    alpha : np.ndarray, shape=(h,w), dtype=float32
-        Per-pixel opacity of the mask (1=fully keep; 0=fully black).
+    repetition_heatmap : np.ndarray
+        A heatmap showing the pixel repetition across all masked heatmaps.
+    amt_of_overlapping_pixels : int
+        Amount of overlapping pixels (only first overlap counted).
+    amt_of_pixels_tot : int
+        Total amount of mask pixels.
     """
-    h, w = image_shape[:2]
-    # -- 1) build binary dilated mask exactly like before
-    mask = np.zeros((h, w), dtype=np.uint8)
-    pts = np.array(landmark_coordinates, dtype=np.int32).reshape(-1,1,2)
-    cv2.polylines(mask, [pts], isClosed=False, color=255,
-                  thickness=1, lineType=cv2.LINE_AA)
-    if fill:
-        cv2.fillPoly(mask, [pts], color=255)
+    repetition_heatmap = None
+    for au, masked_heatmap in masked_heatmaps.items():
+        mask = ~np.isnan(masked_heatmap)  # True where not NaN
+        if repetition_heatmap is None:
+            repetition_heatmap = np.zeros_like(masked_heatmap, dtype=float)
+        repetition_heatmap += mask.astype(float)  # Add 1 where not NaN, 0 where NaN
+        if debug:
+            plot_matrix(repetition_heatmap, title="Pixel Repetition Heatmap @ au: " + au)
 
-    if blur_radius is None:
-        blur_radius = max(1, expansion // 4)
-    if blur_radius % 2 == 0:
-        blur_radius += 1
-    mask = cv2.GaussianBlur(mask, (blur_radius, blur_radius), sigmaX=0)
-    _, mask = cv2.threshold(mask, 10, 255, cv2.THRESH_BINARY)
+    amt_of_overlapping_pixels = np.sum(repetition_heatmap > 1)
+    amt_of_pixels_tot = np.sum(repetition_heatmap > 0)
 
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,
-                                       (expansion, expansion))
-    dilated = cv2.dilate(mask, kernel, iterations=1)
+    return repetition_heatmap, amt_of_overlapping_pixels, amt_of_pixels_tot
 
-    # -- 2) distance-based fade
-    inv = cv2.bitwise_not(dilated)
-    dist = cv2.distanceTransform(inv, cv2.DIST_L2, 5)
-
-    if fade_start is None:
-        fade_start = expansion // 4
-    if fade_end is None:
-        fade_end = expansion * 2
-    span = max(1, fade_end - fade_start)
-
-    alpha = np.clip((fade_end - dist) / span, 0.0, 1.0).astype(np.float32)
-    alpha[dilated > 0] = 1.0
-
-    return alpha
-
-def apply_inverse_masks(image, list_of_au_configs, mask_color=(0, 0, 0)):
+def invert_heatmap(heatmap):
     """
-    image : np.ndarray, original BGR image
-    list_of_au_configs : list of dict, each with keys
-        landmark_coordinates, expansion, blur_radius, fill, fade_start, fade_end
+    Inverts a heatmap by dividing 1 by the heatmap values.
+    Must be careful with NaNs and zeros.
+    Args:
+        heatmap (np.ndarray): The heatmap to invert.
+    Returns:
+        np.ndarray: The inverted heatmap.
     """
-    h, w = image.shape[:2]
-    # start with zero alpha (fully black)
-    alpha_total = np.zeros((h, w), dtype=np.float32)
+    if heatmap.ndim != 2:
+        raise ValueError("Heatmap must be a 2D array.")
+    
+    # Compute the inverse, but keep zeros as zero (not inf or nan)
+    inverse_heatmap = np.zeros_like(heatmap, dtype=float)
+    valid = (heatmap > 0) & (~np.isnan(heatmap))
+    inverse_heatmap[valid] = 1.0 / heatmap[valid]
+    # Zeros and NaNs remain zero
 
-    # accumulate each mask's alpha
-    for cfg in list_of_au_configs:
-        alpha = compute_mask_alpha(
-            cfg['landmark_coordinates'],
-            image.shape,
-            expansion=cfg.get('expansion', 37),
-            blur_radius=cfg.get('blur_radius'),
-            fill=cfg.get('fill'),
-            fade_start=cfg.get('fade_start'),
-            fade_end=cfg.get('fade_end'),
-        )
-        alpha_total = np.maximum(alpha_total, alpha)
-
-    # composite once
-    alpha_3ch = np.dstack([alpha_total]*3)
-    color_layer = np.full_like(image, mask_color, dtype=np.float32)
-    out = image.astype(np.float32) * alpha_3ch + color_layer * (1.0 - alpha_3ch)
-
-    return out.astype(np.uint8)
+    return inverse_heatmap
