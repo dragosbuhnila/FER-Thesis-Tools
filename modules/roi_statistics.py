@@ -1,7 +1,6 @@
 import numpy as np
 
-
-def roi_mean(masked_heatmap):
+def roi_mean(masked_heatmap, pxbypx_weightmap=None, debug=False):
     """
     Compute the mean value of the masked heatmap.
     Args:
@@ -10,13 +9,19 @@ def roi_mean(masked_heatmap):
         dict: A dictionary containing the mean value.
         example: {"mean": 0.1234}
     """
+    if pxbypx_weightmap is None:
+        pxbypx_weightmap = np.ones_like(masked_heatmap)
+
     heatmap_no_nan = np.nan_to_num(masked_heatmap, nan=0.0)
-    sum = np.sum(heatmap_no_nan)
-    
+    heatmap_no_nan_wtd = heatmap_no_nan * pxbypx_weightmap
+
+    sum = np.sum(heatmap_no_nan_wtd)
+
     count = np.count_nonzero(~np.isnan(masked_heatmap))
     mean_value = sum / count if count > 0 else 0
 
-    print(f"roi_mean: sum={sum}, count={count}, mean_value={mean_value}")  # Debug output
+    if debug:
+        print(f"roi_mean: sum={sum}, count={count}, mean_value={mean_value}")  # Debug output
 
     return {"mean": mean_value}
 
