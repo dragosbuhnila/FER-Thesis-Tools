@@ -40,7 +40,7 @@ class LandmarkDict(dict):
         value = super().__getitem__(key)
         return value
 
-LANDMARKS = LandmarkDict({
+AU_LANDMARKS = LandmarkDict({
     # ========================================================================
     "AU1+2+5": [[46, 105, 66, 107,                              # Eyebrows Upper L
                 190, 56, 28, 27, 29, 247,                       # Eye Upper L
@@ -247,6 +247,41 @@ LANDMARKS = LandmarkDict({
     #             32, 176, 148, 152, 377, 400, 262],            # Chin
 })
 
+FACE_PARTS_LANDMARKS = LandmarkDict({
+    "Left Eyebrow": [[70, 63, 105, 66, 107, 55, 65, 52, 53, 46, 
+                      70]],
+    "Right Eyebrow": [[336, 296, 334, 293, 300, 276, 283, 282, 295, 285, 
+                       336]],
+    "Left Eye": [[35, 247, 470, 190, 244, 233, 23, 110, 35,
+                  35]],
+    "Right Eye": [[265, 467, 475, 414, 464, 453, 253, 339,
+                   265]],
+    # "Left Eye": [[33, 160, 158, 157, 173, 154, 145, 163
+    #               , 33]],
+    # "Right Eye": [[463, 384, 386, 388, 263, 390, 374, 381, 
+    #               463]],
+    "Left Cheek": [[117, 119, 100, 142, 203, 206, 205, 50,
+                    117]],
+    "Right Cheek": [[346, 348, 329, 371, 423, 426, 425, 280, 
+                     346]],
+    "Nose": [[6, 456, 360, 289, 19, 59, 131, 236,
+              6]],  
+    "Mouth": [[57, 186, 165, 164, 391, 410, 287, 
+               422, 424, 418, 421, 200, 201, 194, 204, 202,
+               57]],
+})
+
+FACE_PARTS_LANDMARKS_LRMERGED = LandmarkDict({
+    "Eyebrows": [FACE_PARTS_LANDMARKS["Left Eyebrow"][0], 
+                 FACE_PARTS_LANDMARKS["Right Eyebrow"][0]],
+    "Eyes":     [FACE_PARTS_LANDMARKS["Left Eye"][0], 
+                 FACE_PARTS_LANDMARKS["Right Eye"][0]],
+    "Cheeks":   [FACE_PARTS_LANDMARKS["Left Cheek"][0], 
+                 FACE_PARTS_LANDMARKS["Right Cheek"][0]],
+    "Nose":     [FACE_PARTS_LANDMARKS["Nose"][0]],
+    "Mouth":    [FACE_PARTS_LANDMARKS["Mouth"][0]],
+})
+
 def detect_facial_landmarks(image_path):
     """
     Returns the coordinates for landmarks on an image.
@@ -316,5 +351,17 @@ def get_all_AUs():
     """
     Returns a list of all AUs available in the LANDMARKS dictionary.
     """
-    basic_aus = [key for key in LANDMARKS.keys() if not "+" in key]
+    basic_aus = [key for key in AU_LANDMARKS.keys() if not "+" in key]
     return basic_aus
+
+def get_all_face_parts():
+    """
+    Returns a list of all face parts available in the FACE_PARTS_LANDMARKS dictionary.
+    """
+    return list(FACE_PARTS_LANDMARKS.keys())
+
+def get_all_face_parts_lrmerged():
+    """
+    Returns a list of all face parts available in the FACE_PARTS_LANDMARKS dictionary.
+    """
+    return list(FACE_PARTS_LANDMARKS_LRMERGED.keys())
