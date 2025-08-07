@@ -1,20 +1,41 @@
+import itertools
+import os
 from matplotlib import pyplot as plt
 import tkinter as tk
 from tkinter import ttk
 import numpy as np
 import cv2
+import pandas as pd
 
 from modules.basefaces import get_base_face, basefaces
 
-def plot_matrix(matrix, title="No Title", cmap='turbo', vmin=None, vmax=None, block=True):
+
+def plot_matrix(matrix, title="No Title", cmap='turbo', vmin=None, vmax=None, block=True, background=None, alpha=0.7, save_folder=False, save_only=False):
     """
-    Plots a 2D matrix as an image.
+    Plots a 2D matrix as an image, optionally overlaying it on a background image.
     """
     plt.figure()
-    plt.imshow(matrix, cmap=cmap, interpolation='nearest', vmin=vmin, vmax=vmax)
+    if background is not None:
+        plt.imshow(background, cmap='gray', interpolation='nearest')
+        plt.imshow(matrix, cmap=cmap, interpolation='nearest', vmin=vmin, vmax=vmax, alpha=alpha)
+    else:
+        plt.imshow(matrix, cmap=cmap, interpolation='nearest', vmin=vmin, vmax=vmax)
     plt.title(title)
     plt.colorbar()
-    plt.show(block=block)
+
+    # Save the plot if save_folder is specified
+    if save_folder:
+        if not os.path.exists(save_folder):
+            os.makedirs(save_folder)
+        save_path = os.path.join(save_folder, f"{title}.png")
+        plt.savefig(save_path, bbox_inches='tight')
+        print(f"Saved plot to {save_path}")
+
+    # Show the plot only if save_only is False
+    if not save_only:
+        plt.show(block=block)
+        
+    plt.close()
 
 def print_aubyau_stats(statistics, title):
     """
@@ -47,7 +68,26 @@ def show_grid_tkinter(df):
     tree.pack(fill=tk.BOTH, expand=True)
     root.mainloop()
 
-def show_grid_matplotlib(df, cmap='plasma', font_size=6):
+def make_comparison_grid(names, stats_dict, compare_func):
+    """
+    Create a symmetric grid DataFrame comparing all pairs in stats_dict using compare_func.
+    Returns a DataFrame with formatted string values.
+    """
+    grid = pd.DataFrame(index=names, columns=names)
+    # Fill off-diagonal
+    for name1, name2 in itertools.combinations(names, 2):
+        result = compare_func(stats_dict[name1], stats_dict[name2])
+        val = next(iter(result.values())) if isinstance(result, dict) else result
+        grid.loc[name1, name2] = f"{val:.4f}"
+        grid.loc[name2, name1] = f"{val:.4f}"
+    # Fill diagonal
+    for name in names:
+        result = compare_func(stats_dict[name], stats_dict[name])
+        val = next(iter(result.values())) if isinstance(result, dict) else result
+        grid.loc[name, name] = f"{val:.4f}"
+    return grid
+
+def show_grid_matplotlib(df, title, cmap='plasma', font_size=6):
     # Convert DataFrame to a numeric matrix, replacing "-" and non-numeric with np.nan
     matrix = []
     for i, row in df.iterrows():
@@ -82,7 +122,7 @@ def show_grid_matplotlib(df, cmap='plasma', font_size=6):
                     text = str(val)
             ax.text(j, i, text, ha="center", va="center", color="black")
 
-    plt.title("Pairwise Comparison Grid")
+    plt.title(title)
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     plt.tight_layout()
     plt.show(block=False)
