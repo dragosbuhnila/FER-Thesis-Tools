@@ -5,7 +5,7 @@ ROIs:
     - Make the ROIs manually
 
 Scripts:
-    - Aggregation
+    - Aggregation {cm:2025-08-11}
     - ROIs means extraction
         - e.g. dati tutti in npy in una cartella crea file con gli stessi nomi ma che contengono le medie delle 9 ROI invece che le immagini (chiamiamo l'output salienze-roimean)
         - l'utente potra usarli per il proprio codice

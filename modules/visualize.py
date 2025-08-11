@@ -27,7 +27,8 @@ def plot_matrix(matrix, title="No Title", cmap='turbo', vmin=None, vmax=None, bl
     if save_folder:
         if not os.path.exists(save_folder):
             os.makedirs(save_folder)
-        save_path = os.path.join(save_folder, f"{title}.png")
+        filename = title.split("(")[0].strip(" ")
+        save_path = os.path.join(save_folder, f"{filename}.png")
         plt.savefig(save_path, bbox_inches='tight')
         print(f"Saved plot to {save_path}")
 
