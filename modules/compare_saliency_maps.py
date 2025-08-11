@@ -289,26 +289,14 @@ def do_group_comparison(heatmaps_relpaths, debug=False, save_only=False, force_r
 
 # ============ Menu functions ==================
 
-testers_ranking_path = "./saliency_maps/human_Results/testers_ranking.pkl"
-if os.path.exists(testers_ranking_path):
-    with open(testers_ranking_path, "rb") as f:
-        testers_ranking = pickle.load(f)
-        testers_ranking = sorted(testers_ranking, key=lambda x: x[1], reverse=True)  # resort to be sure
-        testers_ranking = [tester_name for tester_name, _ in testers_ranking]  # keep only names
-
-# print(f"Loaded testers' ranking from {testers_ranking_path}. Found {len(testers_ranking)} testers:")
-# for rank, tester in enumerate(testers_ranking, 1):
-#     print(f"{rank:2d}. {tester}")
-
-TESTERS = [
-    d for d in os.listdir(HUMAN_RESULTS_DIR)
-    if os.path.isdir(os.path.join(HUMAN_RESULTS_DIR, d))
-]
-
 EMOTIONS = ["ANGRY", "DISGUST", "FEAR", "HAPPY", "NEUTRAL", "SAD", "SURPRISE"]
 
 
 def compare_single_person():
+    TESTERS = [
+        d for d in os.listdir(HUMAN_RESULTS_DIR)
+        if os.path.isdir(os.path.join(HUMAN_RESULTS_DIR, d))
+    ]
     print(f"Available IDs: {', '.join(TESTERS)}")
     tester = input("Enter Person ID: ").strip().upper()
 
@@ -334,6 +322,17 @@ def compare_single_person():
     do_group_comparison(heatmaps_relpaths, debug=DO_DEBUG, force_recalculate_stats=FORCE_RECALCULATE_STATS)
 
 def compare_top_and_emotions():
+    testers_ranking_path = "./saliency_maps/human_Results/testers_ranking.pkl"
+    if os.path.exists(testers_ranking_path):
+        with open(testers_ranking_path, "rb") as f:
+            testers_ranking = pickle.load(f)
+            testers_ranking = sorted(testers_ranking, key=lambda x: x[1], reverse=True)  # resort to be sure
+            testers_ranking = [tester_name for tester_name, _ in testers_ranking]  # keep only names
+
+    # print(f"Loaded testers' ranking from {testers_ranking_path}. Found {len(testers_ranking)} testers:")
+    # for rank, tester in enumerate(testers_ranking, 1):
+    #     print(f"{rank:2d}. {tester}")
+
     # Select emotion
     print("Choose emotion between ", ", ".join(EMOTIONS))
     selected_emotion = input("Enter Emotion: ").strip().upper()
@@ -383,6 +382,11 @@ def compare_top_and_emotions():
     do_group_comparison(heatmaps_relpaths, debug=DO_DEBUG, force_recalculate_stats=FORCE_RECALCULATE_STATS)
 
 def recalculate_all_stats():
+    TESTERS = [
+        d for d in os.listdir(HUMAN_RESULTS_DIR)
+        if os.path.isdir(os.path.join(HUMAN_RESULTS_DIR, d))
+    ]
+
     for tester in TESTERS:
         heatmaps_path = os.path.join(HUMAN_RESULTS_DIR, tester, "heatmaps")
 
