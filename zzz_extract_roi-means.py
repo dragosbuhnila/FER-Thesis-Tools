@@ -17,7 +17,7 @@ if __name__ == "__main__":
         print("==================================================")
         print(f"Computing mean-vectors for {heatmap_fname}")
         stats, _, _ = compute_heatmap_statistics(heatmap, heatmap_relpath, roi_mean, "mean", separate_lr=True,
-                                   weigh_roi_overlap=False, debug=DEBUG, force_recalculate=True, dont_save=True)
+                                   weigh_roi_overlap=False, debug=DEBUG, force_recalculate=True, dont_save=True, roi_type="faceparts")
 
         # Save the stats to the output folder
         if not os.path.exists(OUTPUT_FOLDER):

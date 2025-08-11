@@ -6,7 +6,6 @@ output_images/
 saliency_maps/
 roi_matrices/
 ROI_debug/
-zzz_input_saliency_maps/
 zzz_output_means_vectors/
 
 __pycache__

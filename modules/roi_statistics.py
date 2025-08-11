@@ -88,6 +88,11 @@ def compare_difmean(stats1, stats2):
     if stats1.keys() != stats2.keys():
         raise ValueError("Statistics dictionaries must have the same keys for comparison.")
     
+    if len(next(iter(stats1.values()))) != 1:
+        raise ValueError("With 'compare_difmean()', statistics must be a single value, but got multiple values in the statistics dictionaries.")
+    if len(next(iter(stats2.values()))) != 1:
+        raise ValueError("With 'compare_difmean()', statistics must be a single value, but got multiple values in the statistics dictionaries.")
+
     mean1 = np.mean([next(iter(v.values())) for v in stats1.values()])
     mean2 = np.mean([next(iter(v.values())) for v in stats2.values()])
 
