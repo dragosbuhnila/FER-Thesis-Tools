@@ -21,8 +21,8 @@ ROI_STAT_CHOSEN = roi_mean          # e.g. choose between: roi_mean, roi_hist
 STAT_NAMES = {"roi_mean": "mean"}[ROI_STAT_CHOSEN.__name__] # e.g. "mean", "mean-std", "hist", etc.
 
 DO_DEBUG = False  
-DEBUG_ROIs = True  # If you use this, reweighting to see overlaps between ROIs will be enabled, as well as separate_lr for left/right distinctions, and forced recalculation of stats but with saving disabled
-DEBUG_ROIs_SAVEONLY = True # If True, won't show the two plots (masked_heatmaps and repetition)
+DEBUG_ROIs = False  # If you use this, reweighting to see overlaps between ROIs will be enabled, as well as separate_lr for left/right distinctions, and forced recalculation of stats but with saving disabled
+DEBUG_ROIs_SAVEONLY = False # If True, won't show the two plots (masked_heatmaps and repetition)
 FORCE_RECALCULATE_STATS = True
 
 ROI_DEBUG_FOLDER = "ROI_debug" if DEBUG_ROIs else None  
@@ -129,7 +129,7 @@ def compute_masked_heatmaps(heatmap, heatmap_fname, roi_type, emotion, debug=Fal
     return masked_heatmaps
 
 def compute_heatmap_statistics(heatmap, heatmap_relpath, compute_stat, stat_names,
-                               weigh_roi_overlap: bool, debug=False, force_recalculate=False, separate_lr=False, roi_type="aus"):
+                               weigh_roi_overlap: bool, separate_lr, debug=False, force_recalculate=False, roi_type="faceparts", dont_save=False):
     """
     Computes statistics for a given heatmap.
     Args:
@@ -154,6 +154,12 @@ def compute_heatmap_statistics(heatmap, heatmap_relpath, compute_stat, stat_name
     """
     subject = try_extract_model_or_user_name(heatmap_relpath)
     emotion = get_emotion_from_heatmap_relpath(heatmap_relpath)
+
+    if subject is None:
+        subject = heatmap_relpath
+
+    if emotion is None:
+        emotion = ""
 
     if heatmap.ndim != 2:
         raise ValueError(f"Heatmap {subject}/{emotion} is not a 2D array. Please check the file format.")
@@ -194,9 +200,9 @@ def compute_heatmap_statistics(heatmap, heatmap_relpath, compute_stat, stat_name
         if debug:
             plot_matrix(weightmap, title=f"Weightmap for {subject}/{emotion}", background=resized_baseface, alpha=0.5)
 
-        print(f"Pixel repetition heatmap not skipped for {subject}/{emotion}.")
+        # print(f"Pixel repetition heatmap not skipped for {subject}/{emotion}.")
     else:
-        print(f"Pixel repetition heatmap skipped for {subject}/{emotion}.")
+        # print(f"Pixel repetition heatmap skipped for {subject}/{emotion}.")
         weightmap = None
 
     # 2) Compute statistic
@@ -208,7 +214,7 @@ def compute_heatmap_statistics(heatmap, heatmap_relpath, compute_stat, stat_name
             print(f"Computed {stat_names} for AU {au}: {stat}")
 
     # 3) Cache the statistics (if debugging ROIs don't save as it may fuck up the stats size, since when debuggin I plot l/r ROIs together, while we usually don't do that with faceparts)
-    if not DEBUG_ROIs:
+    if not DEBUG_ROIs and not dont_save:
         save_statistics(heatmap_relpath, statistics, weigh_roi_overlap=weigh_roi_overlap, separate_lr=separate_lr, roi_type=roi_type)
 
     return statistics, subject, emotion

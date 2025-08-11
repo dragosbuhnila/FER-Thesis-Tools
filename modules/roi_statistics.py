@@ -60,7 +60,7 @@ def compare_dif(stats1, stats2):
 
 def compare_meandif(stats1, stats2):
     """
-    Compare the mean values of two statistics dictionaries.
+    Compare the mean of the differences of means.
     Args:
         stats1 (dict): First statistics dictionary.
         stats2 (dict): Second statistics dictionary.
@@ -71,3 +71,24 @@ def compare_meandif(stats1, stats2):
     mean_diff = sum(differences.values()) / len(differences) if differences else 0
     
     return mean_diff
+
+def compare_difmean(stats1, stats2):
+    """
+    Compare the difference of means of means. I.e. stats1 contains a dictionary of means, so you take the mean of that.
+    Args:
+        stats1 (dict): First statistics dictionary.
+        stats2 (dict): Second statistics dictionary.
+    Returns:
+        dict: A dictionary containing the differences.
+    """
+    if len(stats1) != len(stats2):
+        raise ValueError("Statistics dictionaries must have the same length for comparison.")
+    if not stats1 or not stats2 or len(stats1) == 0 or len(stats2) == 0:
+        raise ValueError("Statistics dictionaries cannot be empty for comparison.")
+    if stats1.keys() != stats2.keys():
+        raise ValueError("Statistics dictionaries must have the same keys for comparison.")
+    
+    mean1 = np.mean([next(iter(v.values())) for v in stats1.values()])
+    mean2 = np.mean([next(iter(v.values())) for v in stats2.values()])
+
+    return abs(mean1 - mean2)
