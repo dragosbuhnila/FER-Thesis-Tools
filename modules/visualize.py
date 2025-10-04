@@ -69,7 +69,7 @@ def show_grid_tkinter(df):
     tree.pack(fill=tk.BOTH, expand=True)
     root.mainloop()
 
-def make_comparison_grid(names, stats_dict, compare_func):
+def make_comparison_grid_combinations(names, stats_dict, compare_func):
     """
     Create a symmetric grid DataFrame comparing all pairs in stats_dict using compare_func.
     Returns a DataFrame with formatted string values.
@@ -88,7 +88,71 @@ def make_comparison_grid(names, stats_dict, compare_func):
         grid.loc[name, name] = f"{val:.4f}"
     return grid
 
-def show_grid_matplotlib(df, title, cmap='plasma', font_size=6):
+EMOTIONS = ["ANGRY", "DISGUST", "FEAR", "HAPPY", "NEUTRAL", "SAD", "SURPRISE"]
+EMOTIONS_PRED = {
+    "ANGRY": "Anger",
+    "DISGUST": "Disgust",
+    "FEAR": "Fear",
+    "HAPPY": "Happiness",
+    "NEUTRAL": "Neutral",
+    "SAD": "Sadness",
+    "SURPRISE": "Surprise"
+}
+
+def make_comparison_grid_versus(names_1, names_2, stats_dict_1, stats_dict_2, compare_func):
+    """
+    Create a DataFrame comparing all pairs between two groups (names_1 and names_2) using compare_func. If the groups aren't exactly complementary, the missing matches will be ignored.
+    Example of comparison:
+        stats_dict_1       stats_dict_2     => comparison_result
+        [a] [b] [ ]        [ ] [k] [ ]          [ ]         [f(b,k)]  [ ]
+        [d] [ ] [ ]        [l] [m] [n]          [f(d,l)]    [ ]       [ ]
+        [ ] [h] [i]        [ ] [p] [q]          [ ]         [f(h,p)]  [f(i,q)]
+    Args:
+        names_1 (list): List of names for the first group.
+            Example: [MATVIN/NEUTRAL_Fear, FEDMAR/SAD_canonical]
+        names_2 (list): List of names for the second group.
+        stats_dict_1 (dict): Dictionary containing statistics for the first group.
+            Example: {"MATVIN/NEUTRAL_Fear": {...}, "FEDMAR/SAD_canonical": {...}}
+        stats_dict_2 (dict): Dictionary containing statistics for the second group.
+        compare_func (callable): Function used to compare statistics between groups.
+    Returns:
+        pd.DataFrame: DataFrame containing the comparison results.
+    """
+    subject1 = names_1[0].split("/")[0]
+    subject2 = names_2[0].split("/")[0]
+
+    for name_1 in names_1:
+        if not name_1.startswith(subject1 + "/"):
+            raise ValueError(f"All names in names_1 should start with the same subject identifier '{subject1}/'. Found '{name_1}'.")
+
+    for name_2 in names_2:
+        if not name_2.startswith(subject2 + "/"):
+            raise ValueError(f"All names in names_2 should start with the same subject identifier '{subject2}/'. Found '{name_2}'.")
+
+    grid = pd.DataFrame(index=EMOTIONS, columns=EMOTIONS)
+    for emotion_gt in EMOTIONS:
+        for emotion_pred in EMOTIONS:
+            if emotion_gt == emotion_pred:
+                emotion_full = f"{emotion_gt.upper()}_canonical"
+            else:
+                # NOTE: I'm not really sure if the caps one is the GT and the other the prediction or viceversa
+                emotion_full = f"{emotion_gt.upper()}_{EMOTIONS_PRED[emotion_pred]}"
+            
+            entry_1 = f"{subject1}/{emotion_full}"
+            entry_2 = f"{subject2}/{emotion_full}"
+
+            try:
+                result = compare_func(stats_dict_1[entry_1], stats_dict_2[entry_2])
+            except KeyError:
+                result = np.nan
+
+            val = next(iter(result.values())) if isinstance(result, dict) else result
+            grid.loc[emotion_gt, emotion_pred] = f"{val:.4f}"
+
+    grid = grid.rename_axis("Ground Truth", axis="index").rename_axis("Predicted", axis="columns")
+    return grid
+
+def show_grid_matplotlib(df, title, cmap='ocean_r', font_size=10, axis_names=None, save_folder=None, save_only=False, block=True):
     # Convert DataFrame to a numeric matrix, replacing "-" and non-numeric with np.nan
     matrix = []
     for i, row in df.iterrows():
@@ -123,10 +187,31 @@ def show_grid_matplotlib(df, title, cmap='plasma', font_size=6):
                     text = str(val)
             ax.text(j, i, text, ha="center", va="center", color="black")
 
-    plt.title(title)
+    # Add axis labels
+    if axis_names:
+        fig.text(0.04, 0.5, axis_names[0], va='center', ha='center', rotation='vertical', fontsize=font_size+4, fontweight='bold')
+        fig.text(0.5, 0.92, 'Predicted', va='center', ha='center', fontsize=font_size+4, fontweight='bold')
+
+    fig.suptitle(title)
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     plt.tight_layout()
-    plt.show(block=False)
+
+    # Save the figure if save_path is provided
+    if save_folder:
+        if not os.path.exists(save_folder):
+            os.makedirs(save_folder)
+        # Clean the title to make a valid filename
+        filename = "".join(c for c in title if c.isalnum() or c in (' ', '_', '-')).rstrip()
+        filename = filename.replace(" ", "_") + ".png"
+        full_path = os.path.join(save_folder, filename)
+        plt.savefig(full_path, bbox_inches='tight')
+        print(f"    >> Saved grid to {full_path}")
+
+    # Show the plot only if save_only is False
+    if not save_only:
+        plt.show(block=block)
+    
+    plt.close()
 
 def show_heatmaps(heatmaps, row_len=4, title_fontsize=8, alpha=0.5):
     """
@@ -174,3 +259,78 @@ def show_heatmaps(heatmaps, row_len=4, title_fontsize=8, alpha=0.5):
 
     plt.tight_layout()
     plt.show(block=False)
+
+def show_heatmaps_grid(heatmaps_dict, title, alpha=0.5, title_fontsize=10, save_folder=None, save_only=False, block=True):
+    """
+    Displays a grid of heatmaps overlayed on base faces, arranged by [Ground Truth, Predicted] emotions.
+    Args:
+        heatmaps_dict (dict): Keys are unique names (should contain GT and predicted emotion), values are heatmap arrays.
+        alpha (float): Transparency of the heatmap overlay.
+        title_fontsize (int): Font size for labels.
+    """
+    n = len(EMOTIONS)
+    fig, axs = plt.subplots(n, n, figsize=(2.5*n, 2.5*n))
+
+    for i, emotion_gt in enumerate(EMOTIONS):
+        for j, emotion_pred in enumerate(EMOTIONS):
+            if emotion_gt == emotion_pred:
+                emotion_full = f"{emotion_gt.upper()}_canonical"
+            else:
+                emotion_full = f"{emotion_gt.upper()}_{EMOTIONS_PRED[emotion_pred]}"
+
+            # Try to find the corresponding heatmap
+            heatmap = None
+            for key in heatmaps_dict:
+                if key.endswith(emotion_full):
+                    heatmap = heatmaps_dict[key]
+                    break
+
+            ax = axs[i, j]
+
+            # Get base face
+            base_face = get_base_face(emotion_pred)  # show predicted face in column
+            img = base_face.image
+            img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            ax.imshow(img_rgb, interpolation='nearest')
+
+            if heatmap is not None:
+                if heatmap.shape[:2] != img.shape[:2]:
+                    heatmap_resized = cv2.resize(heatmap, (img.shape[1], img.shape[0]))
+                else:
+                    heatmap_resized = heatmap
+                ax.imshow(heatmap_resized, cmap='turbo', alpha=alpha, interpolation='nearest', vmin=0, vmax=1)
+
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+        # Label rows (True emotions)
+        axs[i, 0].set_ylabel(emotion_gt.capitalize(), fontsize=title_fontsize, labelpad=10)
+
+    # Label columns (Predicted emotions)
+    for j, emotion_pred in enumerate(EMOTIONS):
+        axs[0, j].set_title(emotion_pred.capitalize(), fontsize=title_fontsize)
+
+    # Add big labels "True" and "Predicted"
+    fig.text(0.04, 0.5, 'True', va='center', ha='center', rotation='vertical', fontsize=title_fontsize+4, fontweight='bold')
+    fig.text(0.5, 0.94, 'Predicted', va='center', ha='center', fontsize=title_fontsize+4, fontweight='bold')
+
+    fig.suptitle(title)
+
+    plt.tight_layout(rect=[0.08, 0.08, 0.95, 0.9])
+
+    # Save the figure if save_path is provided
+    if save_folder:
+        if not os.path.exists(save_folder):
+            os.makedirs(save_folder)
+        # Clean the title to make a valid filename
+        filename = "".join(c for c in title if c.isalnum() or c in (' ', '_', '-')).rstrip()
+        filename = filename.replace(" ", "_") + ".png"
+        full_path = os.path.join(save_folder, filename)
+        plt.savefig(full_path, bbox_inches='tight')
+        print(f"    >> Saved grid to {full_path}")
+
+    # Show the plot only if save_only is False
+    if not save_only:
+        plt.show(block=block)
+        
+    plt.close()

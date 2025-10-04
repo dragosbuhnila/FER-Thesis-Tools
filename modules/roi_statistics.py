@@ -1,5 +1,7 @@
 import numpy as np
 
+from modules.landmark_utils import ROI_ORDER_FACEPARTS
+
 def roi_mean(masked_heatmap, pxbypx_weightmap=None, debug=False):
     """
     Compute the mean value of the masked heatmap.
@@ -34,13 +36,14 @@ def compare_dif(stats1, stats2):
     Returns:
         dict: A dictionary containing the differences.
     """
+    
     if len(stats1) != len(stats2):
-        raise ValueError("Statistics dictionaries must have the same length for comparison.")
+        raise ValueError(f"Statistics dictionaries must have the same length for comparison, instead found {len(stats1)} and {len(stats2)}: first->{stats1.keys()} second->{stats2.keys()}")
     if not stats1 or not stats2 or len(stats1) == 0 or len(stats2) == 0:
         raise ValueError("Statistics dictionaries cannot be empty for comparison.")
     if stats1.keys() != stats2.keys():
-        raise ValueError("Statistics dictionaries must have the same keys for comparison.")
-    
+        raise ValueError(f"Statistics dictionaries must have the same keys for comparison, instead found: first->{stats1.keys()} and second->{stats2.keys()}.")
+
     differences = {}
     for au in stats1.keys():
         # let error be raised if au not in stats2
@@ -81,13 +84,16 @@ def compare_difmean(stats1, stats2):
     Returns:
         dict: A dictionary containing the differences.
     """
+    subject1 = next(iter(stats1.keys()))
+    subject2 = next(iter(stats2.keys()))
+
     if len(stats1) != len(stats2):
-        raise ValueError("Statistics dictionaries must have the same length for comparison.")
+        raise ValueError(f"Statistics dictionaries must have the same length for comparison, instead found {len(stats1)} and {len(stats2)}. First->{stats1.keys()} Second->{stats2.keys()}")
     if not stats1 or not stats2 or len(stats1) == 0 or len(stats2) == 0:
         raise ValueError("Statistics dictionaries cannot be empty for comparison.")
     if stats1.keys() != stats2.keys():
-        raise ValueError("Statistics dictionaries must have the same keys for comparison.")
-    
+        raise ValueError(f"Statistics dictionaries must have the same keys for comparison, instead found: first->{stats1.keys()} and second->{stats2.keys()}.")
+
     if len(next(iter(stats1.values()))) != 1:
         raise ValueError("With 'compare_difmean()', statistics must be a single value, but got multiple values in the statistics dictionaries.")
     if len(next(iter(stats2.values()))) != 1:
@@ -97,3 +103,17 @@ def compare_difmean(stats1, stats2):
     mean2 = np.mean([next(iter(v.values())) for v in stats2.values()])
 
     return abs(mean1 - mean2)
+
+def convert_faceparts_roi_means_from_dict_to_vector(stats_dict):
+    """
+    Convert a stats dictionary like {'Left Eyebrow': {'mean': 0.3555507771417289}, 'Right Eyebrow': {'mean': 0.10694237923453793}, ...}
+    to a vector like [0.3555507771417289, 0.10694237923453793, ...] in a fixed order of ROIs.
+    """
+    
+    vector = []
+    for roi in ROI_ORDER_FACEPARTS:
+        if roi in stats_dict:
+            vector.append(stats_dict[roi]['mean'])
+        else:
+            raise ValueError(f"ROI '{roi}' not found in stats dictionary keys: {list(stats_dict.keys())}")
+    return np.array(vector)

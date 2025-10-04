@@ -273,6 +273,8 @@ FACE_PARTS_LANDMARKS = LandmarkDict({
                     8]],
 })
 
+ROI_ORDER_FACEPARTS = ['Left Eyebrow', 'Right Eyebrow', 'Left Eye', 'Right Eye', 'Left Cheek', 'Right Cheek', 'Nose', 'Mouth', 'Corrugator']
+
 FACE_PARTS_LANDMARKS_LRMERGED = LandmarkDict({
     "Eyebrows":     [FACE_PARTS_LANDMARKS["Left Eyebrow"][0], 
                      FACE_PARTS_LANDMARKS["Right Eyebrow"][0]],

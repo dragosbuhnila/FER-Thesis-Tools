@@ -36,7 +36,13 @@ class BaseFace:
     def __str__(self):
         return f"BaseFace(fname={self.fname}, shape={self.shape}, there are {len(self.landmarks)} landmarks)"
 
-def get_base_face(emotion):
+def get_base_face(emotion_full):
+    emotion = ""
+    try:
+        emotion = emotion_full.split("_")[0]
+    except IndexError:
+        print(f"    >> Error >> Could not extract emotion from {emotion_full}")
+
     if emotion.upper() not in basefaces.keys():
         print(f"Base face for emotion {emotion} not found, returning neutral base face.")
         emotion = "NEUTRAL"
