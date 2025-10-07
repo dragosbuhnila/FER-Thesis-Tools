@@ -27,7 +27,7 @@ FORCE_REMAP = False  # forces remapping of the landmarks
 
 # ==== Dataset ====
 DSFOLDER = "bosphorus_test_HQ"
-OUTPUTFOLDER = "output_images"
+OUTPUTFOLDER = os.path.join("saliency_maps", "zzz_other_and_zips", "output_occlusions")
 if SHOW_EMOTIONS_OR_AUS == "makeds":
     OUTPUTFOLDER = "output_images_testset"
 SUBJECTS = ["bs031", "bs003", "bs006", "bs030"]

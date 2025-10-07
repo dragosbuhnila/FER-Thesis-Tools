@@ -29,11 +29,12 @@ COMPARISONS_SAVEONLY = False
 FORCE_RECALCULATE_STATS = False
 
 ROI_DEBUG_FOLDER = "ROI_debug" if DEBUG_ROIs else None  
-COMPARISON_GRID_FOLDER = os.path.join(".", "output_comparisons_meandif")
 
 # WARNING: if you run this as main, the path will be relative to the current working directory, thus incorrect
 SALIENCY_MAPS_DIR = os.path.join(".", "saliency_maps")
 HUMAN_RESULTS_DIR = os.path.join(SALIENCY_MAPS_DIR, "human_Results")
+OUTPUTS_DIR = os.path.join(SALIENCY_MAPS_DIR, "zzz_other_and_zips")
+COMPARISON_GRID_FOLDER = os.path.join(OUTPUTS_DIR, "output_comparisons_meandif")
 
 
 # <======================================================================================
@@ -585,7 +586,7 @@ def create_organized_folders_aggr_cmd(subject_1, subject_2):
 
         # Create output folder if it doesn't exist
         emotion_gt_pred = reformat_bad_emotion_gtpred_name(emotion_gt_pred)
-        output_folder = os.path.join(SALIENCY_MAPS_DIR, "mean-vectors_organized_aggregated", comparison_subjects, f"{emotion_gt_pred}")
+        output_folder = os.path.join(OUTPUTS_DIR, "mean-vectors_organized_aggregated", comparison_subjects, f"{emotion_gt_pred}")
         os.makedirs(output_folder, exist_ok=True)
 
         # Save the statistics
@@ -609,7 +610,7 @@ def save_gran_vector(name, emotion_gt_and_pred, emotion_gt_and_pred_clean, compa
     stats, subject, emotion = compute_heatmap_statistics(heatmap, heatmap_relpath, ROI_STAT_CHOSEN, STAT_NAMES, weigh_roi_overlap=False, debug=DO_DEBUG, force_recalculate=FORCE_RECALCULATE_STATS, separate_lr=True, roi_type="faceparts", diagonal_only=False, subject_given=name.upper())
     stats = convert_faceparts_roi_means_from_dict_to_vector(stats)
 
-    output_folder = os.path.join(SALIENCY_MAPS_DIR, "mean-vectors_organized_granular", comparison_subjects, f"{emotion_gt_and_pred_clean}", group)
+    output_folder = os.path.join(OUTPUTS_DIR, "mean-vectors_organized_granular", comparison_subjects, f"{emotion_gt_and_pred_clean}", group)
     os.makedirs(output_folder, exist_ok=True)
     output_path = os.path.join(output_folder, f"{emotion_gt_and_pred_clean}_{name}.npy")
 
