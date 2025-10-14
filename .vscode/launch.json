@@ -1,0 +1,61 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+
+
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {   
+            "name": "Python: compare canonicals -- Versus",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Dragos\\Roba\\Lectures\\YM2.2\\Thesis\\d3 Masks\\compare_canonicals.py",
+            "console": "integratedTerminal",
+            "args": ["3", "fedmar", "marfro"],
+        },
+        {   
+            "name": "Python: compare canonicals -- Granular Folders",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Dragos\\Roba\\Lectures\\YM2.2\\Thesis\\d3 Masks\\compare_canonicals.py",
+            "console": "integratedTerminal",
+            "args": ["5", "best", "worst"],
+        },
+        {
+            "name": "Pytest: tests in test/ (project)",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "-q",
+                "test/"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Run current file from root",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "justMyCode": true
+        }
+    ]
+}
