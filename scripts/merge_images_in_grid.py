@@ -4,15 +4,24 @@ from PIL import Image
 import numpy as np
 from collections import defaultdict
 
-INPUT_FOLDER = os.path.join(".", "output_comparisons_meandif")
-OUTPUT_FOLDER = os.path.join(INPUT_FOLDER, "results_of_merging")
-NOF_IMAGES = 3 # Number of images to merge in a row. If more or less images are found for a pattern, a warning is issued and the group is skipped.
+# from modules.compare_saliency_maps import COMPARISON_GRID_FOLDER
 
-def extract_pattern(filename, pattern_regex=r"Comparison_(.*?)_VS_.*?_with_.*?\.png"):
+DEBUG = True
+
+INPUT_FOLDER = os.path.join(".", "saliency_maps", "zzz_other_and_zips", "output_comparisons_meandif")
+OUTPUT_FOLDER = os.path.join(INPUT_FOLDER, "results_of_merging")
+ALL_FILES_UNSORTED_FOLDER = os.path.join(OUTPUT_FOLDER, "all_files_unsorted")
+NOF_IMAGES = 4 # Number of images to merge in a row. If more or less images are found for a pattern, a warning is issued and the group is skipped.
+
+def extract_pattern(filename, pattern_regex=r"Comparison_(.*?)_VS_.*?_with_.*?\.png", debug=False):
     """Extract the common pattern from a filename using regex."""
     match = re.search(pattern_regex, filename)
     if match:
+        if debug:
+            print(f"Extracted pattern '{match.group(1)}' from filename '{filename}'")
         return match.group(1)
+    if debug:
+        print(f"Could not extract pattern from filename '{filename}'")
     return None
 
 def merge_images_horizontally(image_paths, output_path, spacing=10):
@@ -50,14 +59,18 @@ def merge_images_horizontally(image_paths, output_path, spacing=10):
 
 def find_and_merge_image_groups(folder, pattern_regex=None):
     """Find groups of images with common patterns and merge them."""
+    print(f"Scanning folder: {folder}")
+    print(f"Found {len(os.listdir(folder))} total files.")
     filenames = [f for f in os.listdir(folder) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+    print(f"Found {len(filenames)} image files.")
     filenames = [f for f in filenames if "merged" not in f]  # Exclude already merged images
+    print(f"Found {len(filenames)} unmerged files.")
     
     # Group files by pattern
     groups = defaultdict(list)
     for filename in filenames:
         if pattern_regex:
-            pattern = extract_pattern(filename, pattern_regex)
+            pattern = extract_pattern(filename, pattern_regex, debug=DEBUG)
         else:
             raise NotImplementedError("A pattern_regex must be provided.")
             
@@ -84,5 +97,17 @@ if __name__ == "__main__":
         os.makedirs(OUTPUT_FOLDER)
     
     find_and_merge_image_groups(INPUT_FOLDER, pattern_regex)
+
+    all_pngs = [f for f in os.listdir(INPUT_FOLDER) if f.lower().endswith(('.png', '.jpg', '.jpeg')) and "merged" not in f]
+    for f in all_pngs:
+        src_path = os.path.join(INPUT_FOLDER, f)
+        dst_path = os.path.join(ALL_FILES_UNSORTED_FOLDER, f)
+        if not os.path.exists(ALL_FILES_UNSORTED_FOLDER):
+            os.makedirs(ALL_FILES_UNSORTED_FOLDER)
+        if not os.path.exists(dst_path):
+            os.rename(src_path, dst_path)
+            print(f"Moved {src_path} to {dst_path}")
+        else:
+            print(f"File {dst_path} already exists. Skipping move.")
     
     print("All image groups processed.")

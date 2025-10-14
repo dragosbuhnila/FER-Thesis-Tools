@@ -45,9 +45,12 @@ if __name__ == "__main__":
     # < 
 
     # > Create sets
-    upper_tail = ranking[:length // 2]
+    ## upper and lower tail are the top and bottom 32% of the ranking bc that's one standard deviation of the mean
+    # Calculate the size of the upper and lower tails (top and bottom 32%)
+    tail_size = int(length * 0.32)
+    upper_tail = ranking[:tail_size]
     upper_tail_names = {name for name, _ in upper_tail}
-    lower_tail = ranking[length // 2:]
+    lower_tail = ranking[-tail_size:]
     lower_tail_names = {name for name, _ in lower_tail}
 
     if DEBUG:
