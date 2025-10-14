@@ -6,12 +6,12 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 from modules.basefaces import get_base_face
-from modules.filenames_utils import get_emotion_from_heatmap_relpath, get_emotion_full_from_path, reformat_bad_emotion_gtpred_name, try_extract_model_or_user_name
+from modules.filenames_utils import get_emotion_from_heatmap_relpath, get_emotion_full_from_path, reformat_bad_emotion_gtpred_name, try_extract_model_or_user_name, EMOTIONS
 from modules.landmark_utils import AU_LANDMARKS, FACE_PARTS_LANDMARKS, FACE_PARTS_LANDMARKS_LRMERGED, get_all_AUs, get_all_face_parts, get_all_face_parts_lrmerged
 from modules.mask_n_heatmap_utils import compute_pixel_repetition_heatmap, get_roi_matrix, invert_heatmap
 from modules.save_load_utils import load_statistics, save_statistics
 from modules.visualize import make_comparison_grid_combinations, make_comparison_grid_versus, plot_matrix, show_grid_matplotlib, show_heatmaps, show_heatmaps_grid
-from modules.roi_statistics import compare_difmean, convert_faceparts_roi_means_from_dict_to_vector, roi_mean, compare_meandif
+from modules.roi_statistics import compare_difmean, compare_meandif_pxbypx, convert_faceparts_roi_means_from_dict_to_vector, roi_mean, compare_meandif
 from modules.saliencies_folders import saliencies_folders_rel_paths, testers_name_sets
 
 # >======================================================================================
@@ -313,6 +313,8 @@ def do_group_comparison_versus(heatmaps_relpaths_1, heatmaps_relpaths_2, debug, 
     unique_heatmap_names_1, heatmaps_1, stats_list_faceparts_1 = compute_group_of_heatmaps_statistics(heatmaps_relpaths_1, debug, force_recalculate_stats, diagonal_only=False, subject_given=subject_1)
     unique_heatmap_names_2, heatmaps_2, stats_list_faceparts_2 = compute_group_of_heatmaps_statistics(heatmaps_relpaths_2, debug, force_recalculate_stats, diagonal_only=False, subject_given=subject_2)
 
+
+
     subject_1_extracted = unique_heatmap_names_1[0].split("/")[0] if unique_heatmap_names_1 else ""
     if subject_1 is not None and subject_1_extracted != subject_1:
         print(f"Warning: subject_1 '{subject_1}' does not match extracted subject 1 '{subject_1_extracted}' from heatmap names.")
@@ -329,6 +331,17 @@ def do_group_comparison_versus(heatmaps_relpaths_1, heatmaps_relpaths_2, debug, 
 
     # 2) Make the grids
     grid_faceparts = make_comparison_grid_versus(unique_heatmap_names_1, unique_heatmap_names_2, stats_list_faceparts_1, stats_list_faceparts_2, COMPARE_CHOSEN)
+    grid_pxbypx_mean = make_comparison_grid_versus(unique_heatmap_names_1, unique_heatmap_names_2, heatmaps_1, heatmaps_2, compare_meandif_pxbypx)
+
+    # check if some files were missed by comparing non NaNs in grid_faceparts and common names between unique_heatmap_names_1 and unique_heatmap_names_2
+    non_nan_entries = grid_faceparts.stack().index.tolist()
+    non_nan_entries = [(i, j) for i, j in non_nan_entries if grid_faceparts.loc[i, j].lower() != "nan"]
+    # Extract only the emotion part (after the "/") for comparison
+    emotions_1 = set(name.split("/", 1)[1] for name in unique_heatmap_names_1)
+    emotions_2 = set(name.split("/", 1)[1] for name in unique_heatmap_names_2)
+    common_names = emotions_1.intersection(emotions_2)
+    if len(non_nan_entries) != len(common_names):
+        raise ValueError(f"Some files were missed in the comparison! There are {len(common_names)} common names between the two groups, but only {len(non_nan_entries)} non-NaN entries in the comparison grid. Non-NaN entries: {non_nan_entries}, Common names: {common_names}")
 
     # 3) Show the grids and heatmaps
     if save_only:
@@ -337,14 +350,13 @@ def do_group_comparison_versus(heatmaps_relpaths_1, heatmaps_relpaths_2, debug, 
         show_heatmaps_grid(heatmaps_1, title=f"Comparison {subject_1} VS {subject_2} - {subject_1}_heatmaps", alpha=0.5, save_folder=COMPARISON_GRID_FOLDER, save_only=save_only, block=False)
         show_heatmaps_grid(heatmaps_2, title=f"Comparison {subject_1} VS {subject_2} - {subject_2}_heatmaps", alpha=0.5, save_folder=COMPARISON_GRID_FOLDER, save_only=save_only, block=False)
         show_grid_matplotlib(grid_faceparts, title=f"Comparison {subject_1} VS {subject_2} with {COMPARE_CHOSEN.__name__}()", axis_names=("True", "Predicted"), save_folder=COMPARISON_GRID_FOLDER, save_only=save_only, block=False)
+        show_grid_matplotlib(grid_pxbypx_mean, title=f"Comparison {subject_1} VS {subject_2} with compare_meandif_pxbypx()", axis_names=("True", "Predicted"), save_folder=COMPARISON_GRID_FOLDER, save_only=save_only, block=False)
 
         plt.show()
 
 # ============ END OF MAIN FUNCTIONS ==================
 
 # ============ Menu functions ==================
-
-EMOTIONS = ["ANGRY", "DISGUST", "FEAR", "HAPPY", "NEUTRAL", "SAD", "SURPRISE"]
 
 # 0.1) Doesn't directly do a comparison, it's useful as a tool
 def recalculate_all_stats():

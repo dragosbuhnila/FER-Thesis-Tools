@@ -297,7 +297,8 @@ def detect_facial_landmarks(image_path):
     image = mp.Image.create_from_file(image_path)
 
     # Set up FaceLandmarker
-    base_options = BaseOptions(model_asset_path="./mediapipe/face_landmarker.task")
+    model_path = os.path.join(".", "saliency_maps", "mediapipe", "face_landmarker.task")
+    base_options = BaseOptions(model_asset_path=model_path)
     options = FaceLandmarkerOptions(
         base_options=base_options,
         output_face_blendshapes=False,

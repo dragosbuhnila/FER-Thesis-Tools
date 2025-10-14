@@ -17,6 +17,8 @@ if __name__ == "__main__":
         print("1) Combinations Single Person")
         print("2) Combinations Top%, and Emotion")
         print("3) Versus")
+        print("4) Create organized folders with aggregated heatmaps")
+        print("5) Create organized folders with granular heatmaps")
         print("8) Recalculate statistics for all heatmaps")
         print("9) Quit")
         if len(sys.argv) == 4:

@@ -104,6 +104,27 @@ def compare_difmean(stats1, stats2):
 
     return abs(mean1 - mean2)
 
+def compare_meandif_pxbypx(heatmap1, heatmap2):
+    """
+    Compare the pixel-by-pixel mean difference between two heatmaps.
+    Args:
+        heatmap1 (np.ndarray): First heatmap array.
+        heatmap2 (np.ndarray): Second heatmap array.
+    Returns:
+        float: The mean of the absolute differences between the two heatmaps.
+    """
+
+    if heatmap1.shape != heatmap2.shape:
+        raise ValueError(f"Heatmaps must have the same shape for comparison, instead got {heatmap1.shape} and {heatmap2.shape}.")
+
+    # Compute the absolute difference between the two heatmaps
+    abs_diff = np.abs(heatmap1 - heatmap2)
+
+    # Compute the mean of the absolute differences, ignoring NaNs
+    mean_diff = np.nanmean(abs_diff)
+
+    return mean_diff
+
 def convert_faceparts_roi_means_from_dict_to_vector(stats_dict):
     """
     Convert a stats dictionary like {'Left Eyebrow': {'mean': 0.3555507771417289}, 'Right Eyebrow': {'mean': 0.10694237923453793}, ...}

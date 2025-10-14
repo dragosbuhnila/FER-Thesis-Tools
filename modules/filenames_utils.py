@@ -110,3 +110,15 @@ def reformat_bad_emotion_gtpred_name(emotion_gtpred_name):
 
     pred = corrections[pred]
     return f"{gt}_{pred}"
+
+
+EMOTIONS = ["ANGRY", "DISGUST", "FEAR", "HAPPY", "NEUTRAL", "SAD", "SURPRISE"]
+EMOTIONS_PRED = {
+    "ANGRY": "Anger",
+    "DISGUST": "Disgust",
+    "FEAR": "Fear",
+    "HAPPY": "Happiness",
+    "NEUTRAL": "Neutral",
+    "SAD": "Sadness",
+    "SURPRISE": "Surprise"
+}

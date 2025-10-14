@@ -3,11 +3,13 @@ import os
 from matplotlib import pyplot as plt
 import tkinter as tk
 from tkinter import ttk
+from matplotlib.patches import Rectangle
 import numpy as np
 import cv2
 import pandas as pd
 
 from modules.basefaces import get_base_face, basefaces
+from modules.filenames_utils import EMOTIONS, EMOTIONS_PRED
 
 
 def plot_matrix(matrix, title="No Title", cmap='turbo', vmin=None, vmax=None, block=True, background=None, alpha=0.7, save_folder=False, save_only=False):
@@ -88,18 +90,9 @@ def make_comparison_grid_combinations(names, stats_dict, compare_func):
         grid.loc[name, name] = f"{val:.4f}"
     return grid
 
-EMOTIONS = ["ANGRY", "DISGUST", "FEAR", "HAPPY", "NEUTRAL", "SAD", "SURPRISE"]
-EMOTIONS_PRED = {
-    "ANGRY": "Anger",
-    "DISGUST": "Disgust",
-    "FEAR": "Fear",
-    "HAPPY": "Happiness",
-    "NEUTRAL": "Neutral",
-    "SAD": "Sadness",
-    "SURPRISE": "Surprise"
-}
 
-def make_comparison_grid_versus(names_1, names_2, stats_dict_1, stats_dict_2, compare_func):
+
+def make_comparison_grid_versus(names_1, names_2, stats_1, stats_2, compare_func):
     """
     Create a DataFrame comparing all pairs between two groups (names_1 and names_2) using compare_func. If the groups aren't exactly complementary, the missing matches will be ignored.
     Example of comparison:
@@ -132,19 +125,27 @@ def make_comparison_grid_versus(names_1, names_2, stats_dict_1, stats_dict_2, co
     grid = pd.DataFrame(index=EMOTIONS, columns=EMOTIONS)
     for emotion_gt in EMOTIONS:
         for emotion_pred in EMOTIONS:
-            if emotion_gt == emotion_pred:
+            emotion_pred_capitalized = emotion_pred.capitalize()
+            emotion_pred_altname = EMOTIONS_PRED[emotion_pred]  
+            if emotion_gt == emotion_pred or emotion_pred_altname == emotion_gt:
                 emotion_full = f"{emotion_gt.upper()}_canonical"
             else:
-                # NOTE: I'm not really sure if the caps one is the GT and the other the prediction or viceversa
-                emotion_full = f"{emotion_gt.upper()}_{EMOTIONS_PRED[emotion_pred]}"
-            
-            entry_1 = f"{subject1}/{emotion_full}"
-            entry_2 = f"{subject2}/{emotion_full}"
+                # CAPS for GT, normal case for Pred
+                emotion_full = f"{emotion_gt.upper()}_{emotion_pred_altname}"
 
             try:
-                result = compare_func(stats_dict_1[entry_1], stats_dict_2[entry_2])
+                entry_1 = f"{subject1}/{emotion_full}"
+                entry_2 = f"{subject2}/{emotion_full}"
+                result = compare_func(stats_1[entry_1], stats_2[entry_2])
             except KeyError:
-                result = np.nan
+                emotion_full = f"{emotion_gt.upper()}_{emotion_pred_capitalized}"
+                try:
+                    entry_1 = f"{subject1}/{emotion_full}"
+                    entry_2 = f"{subject2}/{emotion_full}"
+                    result = compare_func(stats_1[entry_1], stats_2[entry_2])
+                except KeyError:
+                    # If it still fails, set result to np.nan
+                    result = np.nan
 
             val = next(iter(result.values())) if isinstance(result, dict) else result
             grid.loc[emotion_gt, emotion_pred] = f"{val:.4f}"
@@ -152,21 +153,24 @@ def make_comparison_grid_versus(names_1, names_2, stats_dict_1, stats_dict_2, co
     grid = grid.rename_axis("Ground Truth", axis="index").rename_axis("Predicted", axis="columns")
     return grid
 
-def show_grid_matplotlib(df, title, cmap='ocean_r', font_size=10, axis_names=None, save_folder=None, save_only=False, block=True):
+def show_grid_matplotlib(df, title, cmap='ocean_r', font_size=10, axis_names=None, save_folder=None, save_only=False, block=True, black_nan=False):
     # Convert DataFrame to a numeric matrix, replacing "-" and non-numeric with np.nan
     matrix = []
-    for i, row in df.iterrows():
+    for _, row in df.iterrows():  # No need to use the index
         row_vals = []
-        for val in [i] + list(row):
+        for val in row:  # Iterate directly over the row values
             try:
                 row_vals.append(float(val))
             except:
                 row_vals.append(np.nan)
-        matrix.append(row_vals[1:])  # skip the index column for the matrix
+        matrix.append(row_vals)  # <- append each row inside the loop
 
     matrix = np.array(matrix)
-    fig, ax = plt.subplots(figsize=(0.7*len(df.columns), 0.7*len(df.index)))
-    im = ax.imshow(matrix, cmap=cmap, vmin=0, vmax=1)
+    global_mean = np.nanmean(matrix)
+
+    fig, ax = plt.subplots(figsize=(0.7 * len(df.columns), 0.7 * len(df.index)))
+    # force origin and nearest interpolation for exact cell alignment, keep aspect equal
+    im = ax.imshow(matrix, cmap=cmap, vmin=0, vmax=1, origin='upper', interpolation='nearest', aspect='equal')
 
     # Show all ticks and label them with the respective list entries
     ax.set_xticks(np.arange(len(df.columns)))
@@ -174,23 +178,39 @@ def show_grid_matplotlib(df, title, cmap='ocean_r', font_size=10, axis_names=Non
     ax.set_xticklabels(df.columns, rotation=45, ha="right", fontsize=font_size)
     ax.set_yticklabels(df.index, fontsize=font_size)
 
+    # ensure y coordinates align with rows (0 at top)
+    ax.set_ylim(len(df.index) - 0.5, -0.5)
+
     # Loop over data dimensions and create text annotations.
     for i in range(len(df.index)):
         for j in range(len(df.columns)):
             val = df.iloc[i, j]
-            if isinstance(val, str) and val == "-":
-                text = "-"
+            is_nan = False
+            try:
+                fval = float(val)
+                if np.isnan(fval):
+                    is_nan = True
+            except:
+                is_nan = True
+
+            if is_nan:
+                if black_nan:
+                    # draw a filled black rectangle covering the cell
+                    rect = Rectangle((j - 0.5, i - 0.5), 1, 1, facecolor='black', edgecolor=None, zorder=3)
+                    ax.add_patch(rect)
+                else:
+                    # leave the cell to be rendered by imshow (NaN -> colormap 'bad' color)
+                    # optionally show 'nan' text instead of rectangle (comment out if not wanted)
+                    # ax.text(j, i, "nan", ha="center", va="center", color="black", fontsize=font_size)
+                    pass
             else:
-                try:
-                    text = f"{float(val):.3f}"
-                except:
-                    text = str(val)
-            ax.text(j, i, text, ha="center", va="center", color="black")
+                ax.text(j, i, f"{float(val):.3f}", ha="center", va="center", color="black", fontsize=font_size)
 
     # Add axis labels
     if axis_names:
         fig.text(0.04, 0.5, axis_names[0], va='center', ha='center', rotation='vertical', fontsize=font_size+4, fontweight='bold')
-        fig.text(0.5, 0.92, 'Predicted', va='center', ha='center', fontsize=font_size+4, fontweight='bold')
+        fig.text(0.5, 0.92, axis_names[1], va='center', ha='center', fontsize=font_size+4, fontweight='bold')
+        fig.text(0.5, 0.04, f"Global Mean: {global_mean:.4f}", va='center', ha='center', fontsize=font_size, fontstyle='italic')
 
     fig.suptitle(title)
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
