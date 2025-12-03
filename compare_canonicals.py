@@ -40,7 +40,7 @@ if __name__ == "__main__":
                 compare_two_subjects_cmd(sys.argv[2], sys.argv[3])
                 exit(0)
             elif len(sys.argv) > 1:
-                print("  >> Please provide either: > two subject identifiers + <choice> or  > nothing")
+                print("  >> Please provide either: \n> two subject identifiers + <choice> \n> nothing")
             else:
                 compare_two_subjects()
             continue
@@ -50,7 +50,7 @@ if __name__ == "__main__":
                 create_organized_folders_aggr_cmd(sys.argv[2], sys.argv[3])
                 exit(0)
             elif len(sys.argv) > 1:
-                print("  >> Please provide either: > two subject identifiers + <choice> or  > nothing")
+                print("  >> Please provide either: \n> two subject identifiers + <choice> \n> nothing")
             else:
                 create_organized_folders_aggr()
             continue
@@ -60,7 +60,7 @@ if __name__ == "__main__":
                 create_organized_folders_gran_cmd(sys.argv[2], sys.argv[3])
                 exit(0)
             elif len(sys.argv) > 1:
-                print("  >> Please provide either: > two subject identifiers + <choice> or  > nothing")
+                print("  >> Please provide either: \n> two subject identifiers + <choice> \n> nothing")
             else:
                 create_organized_folders_gran()
 

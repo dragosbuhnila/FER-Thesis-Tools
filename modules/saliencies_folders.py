@@ -6,10 +6,25 @@ BASE_DIR = os.path.join(".", "saliency_maps")
 
 # 1) Saliency folders (mostly aggregated ones)
 saliencies_folders_rel_paths = {
-    # 1) Single person (first two are best, last is worst)
+    # 1a) Single person 1 (first two are best, last is worst)
     "fedmar":           r"human_Results\FEDMAR\heatmaps",
     "marfro":           r"human_Results\MARFRO\heatmaps",
     "matvin":           r"human_Results\MATVIN\heatmaps",
+
+    # 1b) Single person 2 (3 at 76%, 6 at 75%, 1 at 74%)
+    # 76%
+    "fedama":           r"human_Results\FEDAMA\heatmaps",
+    "dalgon":           r"human_Results\DALGON\heatmaps",
+    "paorus":           r"human_Results\PAORUS\heatmaps",
+    # 75%
+    "fraghi":          r"human_Results\FRAGHI\heatmaps",
+    "giugui":          r"human_Results\GIUGUI\heatmaps",
+    "mirtek":          r"human_Results\MIRTEK\heatmaps",
+    "silfer":          r"human_Results\SILFER\heatmaps",
+    "valcol":          r"human_Results\VALCOL\heatmaps",
+    "beafra":          r"human_Results\BEAFRA\heatmaps",
+    # 74%
+    "edodon":          r"human_Results\EDODON\heatmaps",
 
     # 2) Aggregated persons
     "men":              r"human_Mappe numpy\mappe aggregate\heatmaps_maschi",
@@ -17,10 +32,32 @@ saliencies_folders_rel_paths = {
     "best":             r"human_Mappe numpy\mappe aggregate\heatmaps_codasup",
     "worst":            r"human_Mappe numpy\mappe aggregate\heatmaps_codainf",
 
-    # 3) Neural Network (ConvNext)
+    # 3) Bubbles
     "convnext_bub":     r"canonical\bubbles\bubbles\ConvNeXt\bubbles_adele",
+    "efficientnet_bub": r"canonical\bubbles\bubbles\EfficientNetB1\bubbles_adele",
+    "inceptionv3_bub":  r"canonical\bubbles\bubbles\InceptionV3\bubbles_adele",
+    "pattlite_bub":     r"canonical\bubbles\bubbles\PattLite\bubbles_adele",
+    "resnet_bub":       r"canonical\bubbles\bubbles\ResNet\bubbles_adele",
+    "vgg19_bub":        r"canonical\bubbles\bubbles\VGG19\bubbles_adele",
+    "yolo_bub":         r"canonical\bubbles\bubbles\YOLO\bubbles_adele",
+
+    # 4) External
     "convnext_ext":     r"HEATMAPS\EXTERNAL\ConvNeXt",
+    "efficientnet_ext": r"HEATMAPS\EXTERNAL\EfficientNetB1",
+    "inceptionv3_ext":  r"HEATMAPS\EXTERNAL\InceptionV3",
+    "pattlite_ext":     r"HEATMAPS\EXTERNAL\PattLite",
+    "resnet_ext":       r"HEATMAPS\EXTERNAL\ResNet",
+    "vgg19_ext":        r"HEATMAPS\EXTERNAL\VGG19",
+    "yolo_ext":         r"HEATMAPS\EXTERNAL\YOLO",
+
+    # 5) Grad
     "convnext_grad":    r"HEATMAPS\GRADCAM\ConvNeXt", # Come è possibile che non ci siano i layer ma tutto insieme?????? wtf
+    "efficientnet_grad":r"HEATMAPS\GRADCAM\EfficientNetB1",
+    "inceptionv3_grad": r"HEATMAPS\GRADCAM\InceptionV3",
+    "pattlite_grad":    r"HEATMAPS\GRADCAM\PattLite",
+    "resnet_grad":      r"HEATMAPS\GRADCAM\ResNet",
+    "vgg19_grad":       r"HEATMAPS\GRADCAM\VGG19",
+    "yolo_grad":        r"HEATMAPS\GRADCAM\YOLO",
 }
 
 # 2) Tester groups (used for saliencies)
