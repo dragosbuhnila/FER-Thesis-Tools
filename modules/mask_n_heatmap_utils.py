@@ -30,14 +30,14 @@ def mask_face_dots(img, landmark_coords, radius=5, color=(0, 255, 0)):
         cv2.circle(img, (x, y), radius, color, -1)  # Fill the circle
     return img
 
-def mask_face_circles(img, landmark_coords, AU="default"):
+def mask_face_circles(img, landmark_coords, mask_color, AU="default"):
     radius = DISPLAY_OPTIONS[AU]["radius"] if AU in DISPLAY_OPTIONS else DISPLAY_OPTIONS["default"]["radius"]
     axis_ratio = DISPLAY_OPTIONS[AU]["axis_ratio"] if AU in DISPLAY_OPTIONS else DISPLAY_OPTIONS["default"]["axis_ratio"]
     angle_deg = 0.0
     wobble_amp = 0.0
     gradient_exp = DISPLAY_OPTIONS[AU]["gradient_exp"] if AU in DISPLAY_OPTIONS else DISPLAY_OPTIONS["default"]["gradient_exp"]
     ungrad_slice = 0.15
-    color = (0,0,0)
+    color = mask_color
     close_size = 20   
 
     img = img.astype(np.float32) / 255.0
