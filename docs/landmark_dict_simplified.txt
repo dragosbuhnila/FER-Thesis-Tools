@@ -1,0 +1,70 @@
+LANDMARKS = LandmarkDict({
+
+    # AU1 === inner brow raiser === frontalis muscle (the medial portion) === 
+    "AU1":      [[66, 107], [336, 296]],                        # Eyebrows Upper Internal
+
+    # AU2 === outer brow raiser === frontalis muscle (the lateral portion) === 
+    "AU2":      [[46, 105], [334, 283]],                        # Eyebrows Upper Outer (contains some lower)
+
+    # AU4 === brow lowerer ==== corrugator supercilii, depressor supercilii, and/or procerus muscles === 
+    "AU4":      [[46, 105, 66, 107, 9, 336, 296, 334, 283]],    # Eyebrows Upper (contains some lower)
+
+    # AU5 === upper lid raiser === levator palpebrae superioris ===
+    "AU5":      [[414, 286, 258, 257, 259, 467],                # Eye Upper R
+                [247, 29, 27, 28, 56, 190]],                    # Eye Upper L
+
+    # AU6 === cheek raiser === orbicularis oculi muscle (the orbital portion) ===
+    "AU6":      [[256, 253, 339, 446,                           # Eye Lower R
+                346, 329, 277,                                  # Cheek Upper R
+                256],
+                [226, 110, 23, 26, 243,                         # Eye Lower L  
+                 47, 100, 117,                                  # Cheek Upper L
+                 226]],
+
+    # AU9 === nose wrinkler === levator labii superioris alaeque nasi === 
+    "AU9":      [[195,
+                 355, 279, 358, 392,                            # Nose Right 
+                 166, 129, 49, 126,                             # Nose Left  
+                 195]],
+
+    # AU10 === upper lip raiser === levator labii superioris === 
+    "AU10":     [[216, 206, 203, 423, 426, 436,                 # NasoLabial Fold
+                  291, 269, 0, 39,61,                           # Upper Lip Outer
+                 216]],
+
+    # AU12 === lip corner puller === zygomaticus major ===
+    "AU12":     [[436, 422,                                     # Mouth Side R
+                405, 15, 181,                                   # Lower Lip Outer Alt w/o Chelions
+                202, 216,                                       # Mouth Side L 
+                436]],
+
+    # AU15 === lip corner depressor === depressor anguli oris ===
+    "AU15":     [[39, 0, 269,                                   # Upper Lip Outer w/o Chelions
+                287,                                            # Lip corner extension R
+                405, 17, 181,                                   # Lower Lip Outer w/o Chelions
+                57,                                             # Lip corner extension L
+                39]],
+
+    # AU16 === lower lip depressor === depressor labii inferioris === 
+    "AU16":     [[291, 404, 16, 180, 61]],                      # Lower Lip Mid
+
+    # AU23 === lip tightener === orbicularis oris muscle (marginal portion) === 
+    "AU23":     [[39, 0, 269,                                   # Upper Lip Outer w/o Chelions
+                405, 17, 181,                                   # Lower Lip Outer w/o Chelions
+                39]],
+
+    # AU24 === lip presser === orbicularis oris muscle (marginal portion) === 
+    "AU24":     [[61, 39, 0, 269, 291,                          # Upper Lip Outer
+                405, 17, 181,                                   # Lower Lip Outer w/o Chelions
+                61]],
+
+    # AU26 === jaw drop === relaxation of masseter, temporalis, and medial pterygoid
+    "AU26":     [[61, 180, 16, 404, 291,                        # Lower Lip Mid
+                262, 428, 199, 208, 32,                         # Chin
+                61]],
+
+    # AU27 === mouth stretch === lateral pterygoid and the suprahyoid (anterior digastric, geniohyoid, and mylohyoid) ===
+    "AU27":     [[61, 39, 0, 269, 291,                          # Upper Lip Outer
+                262, 428, 199, 208, 32,                         # Chin
+                61]],
+})

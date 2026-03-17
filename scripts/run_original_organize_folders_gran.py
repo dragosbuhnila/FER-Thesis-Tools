@@ -5,23 +5,15 @@ import os
 PYTHON_EXE = os.path.abspath("./.venv/Scripts/python.exe")
 SCRIPT = os.path.abspath("./compare_canonicals.py")
 MERGING_SCRIPT = os.path.abspath("./scripts/make_images_grid.py")
-METHOD = 4
+METHOD = 5  # 5 - organize_folders_granularly
 
-# Define comparisons (uncommented ones from the batch file)
+# Define comparisons: total = 2
 comparisons = [
-    ("fedmar", "marfro"),
-    # Uncomment the following lines if needed:
-    # ("fedmar", "matvin"),
-    # ("marfro", "matvin"),
-    # ("men", "women"),
-    # ("best", "worst"),
-    # ("convnext_bub", "fedmar"),
-    # ("convnext_bub", "marfro"),
-    # ("convnext_ext", "fedmar"),
-    # ("convnext_ext", "marfro"),
-    # ("convnext_grad", "fedmar"),
-    # ("convnext_grad", "marfro"),
+    ("men", "women"),  # maschi vs femmine
+    ("best", "worst"),  # upper tail vs lower tail
 ]
+
+print(f"Total comparisons to run: {len(comparisons)}")
 
 # Run comparisons
 for subject1, subject2 in comparisons:

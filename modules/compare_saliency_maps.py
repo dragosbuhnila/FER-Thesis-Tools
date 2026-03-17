@@ -4,6 +4,7 @@ import re
 import cv2
 from matplotlib import pyplot as plt
 import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 
 from modules.basefaces import get_base_face
 from modules.filenames_utils import get_emotion_from_heatmap_relpath, get_emotion_full_from_path, reformat_bad_emotion_gtpred_name, try_extract_model_or_user_name, EMOTIONS
@@ -12,7 +13,7 @@ from modules.mask_n_heatmap_utils import compute_pixel_repetition_heatmap, get_r
 from modules.save_load_utils import load_statistics, save_statistics
 from modules.visualize import make_comparison_grid_combinations, make_comparison_grid_versus, plot_matrix, show_grid_matplotlib, show_heatmaps, show_heatmaps_grid
 from modules.roi_statistics import compare_difmean, compare_meandif_pxbypx, convert_faceparts_roi_means_from_dict_to_vector, roi_mean, compare_meandif
-from modules.saliencies_folders import saliencies_folders_rel_paths, testers_name_sets
+from modules.saliencies_folders import HEATMAPS_ALE_SINGLE_HUMANS_DIR_PATH, saliencies_folders_rel_paths_phase1, saliencies_folders_rel_paths_phase2, testers_name_sets_phase1, testers_name_sets_phase2
 
 # >======================================================================================
 # >=========== MACROS ===================================================================
@@ -22,6 +23,7 @@ COMPARE_CHOSEN = compare_meandif    # e.g. choose between: compare_meandif, comp
 ROI_STAT_CHOSEN = roi_mean          # e.g. choose between: roi_mean, roi_hist
 STAT_NAMES = {"roi_mean": "mean"}[ROI_STAT_CHOSEN.__name__] # e.g. "mean", "mean-std", "hist", etc.
 
+# For a "correct" run, set debugs to false
 DO_DEBUG = False  
 DEBUG_ROIs = False  # If you use this, reweighting to see overlaps between ROIs will be enabled, as well as separate_lr for left/right distinctions, and forced recalculation of stats but with saving disabled
 DEBUG_ROIs_SAVEONLY = False # If True, won't show the two plots (masked_heatmaps and repetition)
@@ -226,6 +228,8 @@ def compute_heatmap_statistics(heatmap, heatmap_relpath, compute_stat, stat_name
         if debug:
             print(f"Computed {stat_names} for AU {au}: {stat}")
 
+    
+
     # 3) Cache the statistics (if debugging ROIs don't save as it may fuck up the stats size, since when debuggin I plot l/r ROIs together, while we usually don't do that with faceparts)
     if not DEBUG_ROIs and not dont_save:
         save_statistics(heatmap_relpath, statistics, weigh_roi_overlap=weigh_roi_overlap, separate_lr=separate_lr, roi_type=roi_type)
@@ -247,6 +251,10 @@ def compute_group_of_heatmaps_statistics(heatmaps_relpaths, debug, force_recalcu
 
     for heatmap_relpath in heatmaps_relpaths:
         heatmap = np.load(heatmap_relpath)
+
+        # if the heatmap is only nans then skip it
+        # if np.all(np.isnan(heatmap)):
+        #     continue
 
         # compute both raw and pixel-weighted statistics, so you can plot both for comparison
         # - pxwtd means that the statistics are weighted by the pixel repetition across AUs
@@ -347,6 +355,14 @@ def do_group_comparison_versus(heatmaps_relpaths_1, heatmaps_relpaths_2, debug, 
     if save_only:
         print(f"Not displaying plt for Versus comparison between {subject_1} and {subject_2}")
     else:
+        # fix pattlite to mobilenet
+        subject_1 = subject_1.replace("pattlite", "mobilenet") if "pattlite" in subject_1 else subject_1
+        subject_2 = subject_2.replace("pattlite", "mobilenet") if "pattlite" in subject_2 else subject_2
+        subject_1 = subject_1.replace("PATTLITE", "MOBILENET") if "PATTLITE" in subject_1 else subject_1
+        subject_2 = subject_2.replace("PATTLITE", "MOBILENET") if "PATTLITE" in subject_2 else subject_2
+
+
+
         show_heatmaps_grid(heatmaps_1, title=f"Comparison {subject_1} VS {subject_2} - {subject_1}_heatmaps", alpha=0.5, save_folder=COMPARISON_GRID_FOLDER, save_only=save_only, block=False)
         show_heatmaps_grid(heatmaps_2, title=f"Comparison {subject_1} VS {subject_2} - {subject_2}_heatmaps", alpha=0.5, save_folder=COMPARISON_GRID_FOLDER, save_only=save_only, block=False)
         show_grid_matplotlib(grid_faceparts, title=f"Comparison {subject_1} VS {subject_2} with {COMPARE_CHOSEN.__name__}()", axis_names=("True", "Predicted"), save_folder=COMPARISON_GRID_FOLDER, save_only=save_only, block=False)
@@ -492,15 +508,43 @@ def compare_top_and_emotions():
     print(f"    >> heatmaps_relpaths: {heatmaps_relpaths}")
     do_group_comparison_combinations(heatmaps_relpaths, debug=DO_DEBUG, save_only=False, force_recalculate_stats=FORCE_RECALCULATE_STATS)
 
-def compare_two_subjects():
-    subject_list = saliencies_folders_rel_paths.keys()
 
+def get_saliencies_folders_rel_paths(phase):
+    if int(phase) == 1:
+        saliencies_folders_rel_paths = saliencies_folders_rel_paths_phase1
+    elif int(phase) == 2:
+        saliencies_folders_rel_paths = saliencies_folders_rel_paths_phase2
+    else:
+        raise ValueError(f"Invalid phase: {phase}. Please choose either 1 or 2.")
+    
+    return saliencies_folders_rel_paths
+
+def get_testers_name_sets(phase):
+    if int(phase) == 1:
+        testers_name_sets = testers_name_sets_phase1
+        human_results_dir = HUMAN_RESULTS_DIR
+    elif int(phase) == 2:
+        testers_name_sets = testers_name_sets_phase2
+        human_results_dir = HEATMAPS_ALE_SINGLE_HUMANS_DIR_PATH
+    else:
+        raise ValueError(f"Invalid phase: {phase}. Please choose either 1 or 2.")
+
+    return human_results_dir, testers_name_sets
+
+
+def compare_two_subjects():
+    phase = input("Enter phase (1 or 2): ")
+    saliencies_folders_rel_paths = get_saliencies_folders_rel_paths(phase)
+
+    subject_list = saliencies_folders_rel_paths.keys()
     subject_1 = input(f"Enter first subject ({', '.join(subject_list)}): ").strip().lower()
     subject_2 = input(f"Enter second subject ({', '.join(subject_list)}): ").strip().lower()
 
-    compare_two_subjects_cmd(subject_1, subject_2)
+    compare_two_subjects_cmd(phase, subject_1, subject_2)
 
-def compare_two_subjects_cmd(subject_1, subject_2):
+def compare_two_subjects_cmd(phase, subject_1, subject_2):
+    saliencies_folders_rel_paths = get_saliencies_folders_rel_paths(phase)
+
     folder_relpath_1 = saliencies_folders_rel_paths.get(subject_1)
     folder_relpath_2 = saliencies_folders_rel_paths.get(subject_2)
 
@@ -525,14 +569,16 @@ def compare_two_subjects_cmd(subject_1, subject_2):
     do_group_comparison_versus(folder_1_relpaths, folder_2_relpaths, debug=DO_DEBUG, save_only=COMPARISONS_SAVEONLY, force_recalculate_stats=FORCE_RECALCULATE_STATS, subject_1=subject_1.upper(), subject_2=subject_2.upper())
 
 def create_organized_folders_aggr():
-    subject_list = saliencies_folders_rel_paths.keys()
+    phase = input("Enter phase (1 or 2): ")
+    saliencies_folders_rel_paths = get_saliencies_folders_rel_paths(phase)
 
+    subject_list = saliencies_folders_rel_paths.keys()
     subject_1 = input(f"Enter first subject ({', '.join(subject_list)}): ").strip().lower()
     subject_2 = input(f"Enter second subject ({', '.join(subject_list)}): ").strip().lower()
 
-    create_organized_folders_aggr_cmd(subject_1, subject_2)
+    create_organized_folders_aggr_cmd(phase, subject_1, subject_2)
 
-def create_organized_folders_aggr_cmd(subject_1, subject_2):
+def create_organized_folders_aggr_cmd(phase, subject_1, subject_2):
     """ Extracts the meanvectors for all saliency maps of the aggregated subjects, and organizes the results as follows:
         (> is folder, - is file)
             > ANGRY_ANGRY
@@ -543,6 +589,8 @@ def create_organized_folders_aggr_cmd(subject_1, subject_2):
                 - ANGRY_HAPPY_GROUP2.npy
             > ...
     """
+    saliencies_folders_rel_paths = get_saliencies_folders_rel_paths(phase)
+
     folder_relpath_1 = saliencies_folders_rel_paths.get(subject_1)
     folder_relpath_2 = saliencies_folders_rel_paths.get(subject_2)
     comparison_subjects = f"{subject_1.upper()}_VS_{subject_2.upper()}"
@@ -610,11 +658,11 @@ def create_organized_folders_aggr_cmd(subject_1, subject_2):
 
     # stats_faceparts, subject, emotion = compute_heatmap_statistics(heatmap, heatmap_relpath, ROI_STAT_CHOSEN, STAT_NAMES, weigh_roi_overlap=False, debug=debug, force_recalculate=force_recalculate_stats, separate_lr=False, roi_type="faceparts", diagonal_only=diagonal_only, subject_given=subject_given)
 
-def save_gran_vector(name, emotion_gt_and_pred, emotion_gt_and_pred_clean, comparison_subjects, group, verbose=False):
+def save_gran_vector(name, emotion_gt_and_pred, emotion_gt_and_pred_clean, comparison_subjects, group, human_results_dir, verbose=False):
     if group not in ["GROUP1", "GROUP2"]:
         raise ValueError(f"Group must be 'GROUP1' or 'GROUP2', got '{group}'")
 
-    heatmap_relpath = os.path.join(HUMAN_RESULTS_DIR, name, "heatmaps", f"{emotion_gt_and_pred}.npy")
+    heatmap_relpath = os.path.join(human_results_dir, name, "heatmaps", f"{emotion_gt_and_pred}.npy")
     if not os.path.isfile(heatmap_relpath):
         return None
 
@@ -631,7 +679,10 @@ def save_gran_vector(name, emotion_gt_and_pred, emotion_gt_and_pred_clean, compa
         print(f"  >> Saved granular stats for '{emotion_gt_and_pred_clean}' and tester '{name}' to '{output_path}'")
 
 def create_organized_folders_gran():
+    phase = input("Enter phase (1 or 2): ")
     subject_list_granular = ["men", "women", "best", "worst"]
+    
+    saliencies_folders_rel_paths = get_saliencies_folders_rel_paths(phase)
     subject_list_full = saliencies_folders_rel_paths.keys()
 
     for subject in subject_list_granular:
@@ -641,9 +692,9 @@ def create_organized_folders_gran():
     subject_1 = input(f"Enter first subject ({', '.join(subject_list_granular)}): ").strip().lower()
     subject_2 = input(f"Enter second subject ({', '.join(subject_list_granular)}): ").strip().lower()
 
-    create_organized_folders_gran_cmd(subject_1, subject_2)
+    create_organized_folders_gran_cmd(phase, subject_1, subject_2)
 
-def create_organized_folders_gran_cmd(subject_1, subject_2):
+def create_organized_folders_gran_cmd(phase, subject_1, subject_2):
     """ Extracts the meanvectors for all saliency maps of the two subjects, in a granular manner, and organizes the results as follows:
         (> is folder, - is file)
         > ANGRY_ANGRY
@@ -660,6 +711,9 @@ def create_organized_folders_gran_cmd(subject_1, subject_2):
                 - ...
         > ...
     """
+    human_results_dir, testers_name_sets = get_testers_name_sets(phase)
+    print(f"Testers name sets for phase {phase}:")
+    print(testers_name_sets)
 
     # > get the names of the testers for both subjects (e.g. set for men and set for women)
     name_set_1 = testers_name_sets.get(subject_1)
@@ -674,7 +728,7 @@ def create_organized_folders_gran_cmd(subject_1, subject_2):
     name_set_complete = name_set_1 | name_set_2
     emotions_gt_and_pred = set()
     for tester in name_set_complete:
-        heatmaps_path = os.path.join(HUMAN_RESULTS_DIR, tester, "heatmaps")
+        heatmaps_path = os.path.join(human_results_dir, tester, "heatmaps")
         if not os.path.isdir(heatmaps_path):
             raise ValueError(f"  >> Error: heatmaps folder '{heatmaps_path}' missing for tester '{tester}'.")
         
@@ -687,10 +741,309 @@ def create_organized_folders_gran_cmd(subject_1, subject_2):
         emotion_gt_and_pred_clean = reformat_bad_emotion_gtpred_name(emotion_gt_and_pred)
         
         for name in name_set_1:
-            res = save_gran_vector(name, emotion_gt_and_pred, emotion_gt_and_pred_clean, comparison_subjects, group="GROUP1", verbose=True)
+            res = save_gran_vector(name, emotion_gt_and_pred, emotion_gt_and_pred_clean, comparison_subjects, group="GROUP1", human_results_dir=human_results_dir, verbose=True)
             if res is None:
                 continue
         for name in name_set_2:
-            res = save_gran_vector(name, emotion_gt_and_pred, emotion_gt_and_pred_clean, comparison_subjects, group="GROUP2", verbose=True)
+            res = save_gran_vector(name, emotion_gt_and_pred, emotion_gt_and_pred_clean, comparison_subjects, group="GROUP2", human_results_dir=human_results_dir, verbose=True)
             if res is None:
                 continue
+
+# ==================================================================
+
+def merge_generated_images(new_paths, output_image_path, model_names, images_per_row=7, vertical=False):
+    """
+    Merges all generated images into a single image, grouped by XAI method, with model names above each image
+    and XAI method names below the model names.
+    Args:
+        new_paths (dict): Dictionary of XAI method names and their corresponding image paths.
+        output_image_path (str): Path to save the merged image.
+        model_names (list): List of model names.
+        images_per_row (int): Number of images per row (or column if vertical=True).
+        vertical (bool): If True, display the image vertically (models as rows, XAI methods as columns).
+    """
+    # Open all images and group them by XAI method
+    grouped_images = {}
+    for old_path, image_path in new_paths.items():
+        if "bubbles" in old_path.lower():
+            xai_method = "Bubbles"
+        elif "external" in old_path.lower() or "extpert" in old_path.lower():
+            xai_method = "External"
+        elif "gradcam" in old_path.lower():
+            xai_method = "GradCAM"
+        else: 
+            raise ValueError(f"Unknown XAI method for path: {old_path}")
+
+        for model_name in model_names:
+            if model_name.lower() in old_path.lower():
+                model = model_name
+                break
+        else:
+            model = None
+
+        if os.path.exists(image_path):
+            img = Image.open(image_path)
+            if xai_method not in grouped_images:
+                grouped_images[xai_method] = []
+            grouped_images[xai_method].append((img, model, xai_method))  # Store image, model name, and XAI method
+        else:
+            print(f"Image not found: {image_path}")
+
+    # Determine the size of each image (assuming all images are the same size)
+    first_image = next(iter(grouped_images.values()))[0][0]
+    image_width, image_height = first_image.size
+
+    # Add space for model names and XAI methods above each image
+    text_height = 60  # Increase the height for the text area above each image
+    total_image_height = image_height + text_height
+    total_image_width = image_width + text_height
+
+    # Calculate the size of the final merged image
+    if vertical:
+        num_rows = len(model_names)  # One row per model
+        num_cols = len(grouped_images)  # One column per XAI method
+        canvas_width = num_cols * total_image_width
+        canvas_height = num_rows * total_image_height
+    else:
+        num_rows = len(grouped_images)  # One row per XAI method
+        canvas_width = images_per_row * image_width
+        canvas_height = num_rows * total_image_height
+
+    # Create a blank canvas for the final image
+    merged_image = Image.new('RGB', (canvas_width, canvas_height), color=(255, 255, 255))
+
+    # Create a drawing context for adding text
+    draw = ImageDraw.Draw(merged_image)
+
+    # Use a larger font size for the model names and XAI methods
+    try:
+        font_model = ImageFont.truetype("arial.ttf", 24)  # Font for model names
+        font_xai = ImageFont.truetype("arial.ttf", 20)    # Font for XAI methods
+    except IOError:
+        font_model = ImageFont.load_default()  # Fallback to default font if "arial.ttf" is unavailable
+        font_xai = ImageFont.load_default()
+
+    # Paste images into the canvas with model names and XAI methods
+    if vertical:
+        x_offset = 0
+        for model_name in model_names:
+            y_offset = 0
+            for xai_method, images in grouped_images.items():
+                for img, img_model_name, img_xai_method in images:
+                    if img_model_name == model_name and img_xai_method == xai_method:
+                        # Paste the image
+                        merged_image.paste(img, (x_offset + text_height, y_offset + text_height))
+
+                        # Add the XAI method above the image
+                        text_x = x_offset + total_image_width // 2
+                        text_y_xai = y_offset + 10  # Position for the XAI method
+                        draw.text((text_x, text_y_xai), xai_method, fill="gray", anchor="mm", font=font_xai)
+
+                        # Add the model name to the left of the image
+                        text_y = y_offset + total_image_height // 2
+                        text_x_model = x_offset + 10  # Position for the model name
+                        draw.text((text_x_model, text_y), model_name, fill="black", anchor="mm", font=font_model)
+
+                y_offset += total_image_height
+            x_offset += total_image_width
+    else:
+        y_offset = 0
+        for xai_method, images in grouped_images.items():
+            for idx, (img, model_name, xai_method) in enumerate(images):
+                row = idx // images_per_row
+                col = idx % images_per_row
+
+                # Calculate the position to paste the image
+                x_offset = col * image_width
+                y_image_offset = y_offset + text_height
+
+                # Paste the image
+                merged_image.paste(img, (x_offset, y_image_offset))
+
+                # Add the model name above the image
+                if model_name:
+                    text_x = x_offset + image_width // 2
+                    text_y_model = y_offset + 10  # Position for the model name
+                    draw.text((text_x, text_y_model), model_name, fill="black", anchor="mm", font=font_model)
+
+                # Add the XAI method below the model name
+                text_y_xai = y_offset + 40  # Position for the XAI method (below the model name)
+                draw.text((text_x, text_y_xai), xai_method, fill="gray", anchor="mm", font=font_xai)
+
+            # Move to the next row for the next XAI method
+            y_offset += total_image_height
+
+    # Save the final merged image
+    merged_image.save(output_image_path)
+    print(f"Merged image saved to: {output_image_path}")
+
+
+def compute_left_right(source_folder_path, output_npy_path):
+    """
+    Computes left and right mean values for saliency maps in a folder and visualizes them in a confusion matrix.
+    Args:
+        folder_path (str): Path to the folder containing saliency maps.
+        output_path (str): Path to the new png.
+    """
+    # List all .npy files in the folder
+    heatmap_files = [f for f in os.listdir(source_folder_path) if f.endswith(".npy")]
+    if not heatmap_files:
+        print(f"No saliency maps found in folder: {source_folder_path}")
+        return
+
+    # Initialize confusion matrix
+    num_emotions = len(EMOTIONS)
+    confusion_matrix = np.zeros((num_emotions, num_emotions, 2))  # Shape: (num_emotions, num_emotions, 2)
+
+    # Process each heatmap
+    for heatmap_file in heatmap_files:
+        heatmap_path = os.path.join(source_folder_path, heatmap_file)
+        heatmap = np.load(heatmap_path)
+
+        # Split heatmap into left and right halves
+        mid_col = heatmap.shape[1] // 2
+        left_half = heatmap[:, :mid_col]
+        right_half = heatmap[:, mid_col:]
+
+        # Compute mean values for left and right halves
+        left_mean = np.nanmean(left_half)
+        right_mean = np.nanmean(right_half)
+
+        # if completely empty set to 0
+        if np.isnan(left_mean):
+            left_mean = 0
+        if np.isnan(right_mean):
+            right_mean = 0
+
+        # Extract ground truth and predicted emotions from the filename
+        emotion_gt_pred = get_emotion_full_from_path(heatmap_file)  # e.g., "ANGRY_HAPPY"
+        if not emotion_gt_pred:
+            raise ValueError(f"Could not extract emotion from filename: {heatmap_file}")
+        emotion_gt_pred = reformat_bad_emotion_gtpred_name(emotion_gt_pred)
+
+        emotion_gt, emotion_pred = emotion_gt_pred.split("_")
+        if emotion_gt not in EMOTIONS or emotion_pred not in EMOTIONS:
+            print(f"Invalid emotions in filename: {heatmap_file}")
+            continue
+
+        # Get indices for the confusion matrix
+        gt_idx = EMOTIONS.index(emotion_gt)
+        pred_idx = EMOTIONS.index(emotion_pred)
+
+        # Store left and right means in the confusion matrix
+        confusion_matrix[gt_idx, pred_idx, 0] += left_mean
+        confusion_matrix[gt_idx, pred_idx, 1] += right_mean
+
+    # Visualize the confusion matrix
+    fig, ax = plt.subplots()
+
+    # Initialize variables for global statistics
+    blue_count = 0    # Count of blue cells (right > left)
+    red_count = 0     # Count of red cells (left >= right)
+
+    for i in range(num_emotions):
+        for j in range(num_emotions):
+            left_mean, right_mean = confusion_matrix[i, j]
+            if left_mean == 0 and right_mean == 0:
+                continue  # Skip empty cells
+
+            # Determine color and transparency
+            if right_mean > left_mean:
+                color = "blue"
+                blue_count += 1
+            else:
+                color = "red"
+                red_count += 1
+            alpha = abs(right_mean - left_mean) / max(left_mean, right_mean, 1e-5)  # Normalize transparency
+
+            # Draw the square
+            ax.add_patch(plt.Rectangle((j, i), 1, 1, color=color, alpha=min(1, alpha)))
+
+            # Add text for left and right means
+            ax.text(j + 0.5, i + 0.7, f"L: {left_mean:.2f}", ha="center", va="center", fontsize=8, color="black")
+            ax.text(j + 0.5, i + 0.3, f"R: {right_mean:.2f}", ha="center", va="center", fontsize=8, color="black")
+
+    # Compute global statistics
+    global_difference = blue_count - red_count
+
+    # Set axis labels and ticks
+    ax.set_xticks(np.arange(num_emotions) + 0.5)
+    ax.set_yticks(np.arange(num_emotions) + 0.5)
+    ax.set_xticklabels(EMOTIONS, rotation=45, ha="right")
+    ax.set_yticklabels(EMOTIONS)
+    ax.set_xlim(0, num_emotions)
+    ax.set_ylim(0, num_emotions)
+    ax.invert_yaxis()
+
+    # Add title with padding
+    ax.set_title("Left vs Right Means (Blue is Right > Left)", fontsize=14, pad=13)  # Add padding to the title
+
+    # Add global statistics below the title
+    stats_text = f"Global Difference: {global_difference}"
+    color = "red" if global_difference < 0 else "blue"
+    ax.text(
+        0.5, 1.02, stats_text, ha="center", va="center", fontsize=10, color=color, transform=ax.transAxes
+    )
+
+    # Ensure the matrix is perfectly rectangular
+    ax.set_aspect("equal")  # Force square cells
+    plt.tight_layout(pad=2.0)  # Adjust layout to add padding around the plot
+
+    # Save the plot
+    output_dir = os.path.dirname(output_npy_path)
+    os.makedirs(output_dir, exist_ok=True)
+    plt.savefig(output_npy_path)
+    plt.close()
+    # plt.show()
+
+
+
+
+def compute_left_right_wrapper(src_heatmaps_folder_basename="HEATMAPS_occft"):
+    src_heatmaps_base_path = os.path.join(SALIENCY_MAPS_DIR, src_heatmaps_folder_basename)
+    dest_heatmaps_folder_basename = src_heatmaps_folder_basename + "_left_right_analysis"
+    dest_heatmaps_folder_path = src_heatmaps_base_path.replace(src_heatmaps_folder_basename, dest_heatmaps_folder_basename)
+
+    if "fede" in src_heatmaps_base_path:
+        MODEL_NAMES = ["convnext", "efficientnetb1", "inceptionv3", "pattlite", "resnet", "vgg19", "yolo"] # for fede
+    elif "occft" in src_heatmaps_base_path:
+        MODEL_NAMES = ["occft_convnext", "occft_efficientnetb1", "occft_inceptionv3", "occft_pattlite", "occft_resnet", "occft_vgg19", "occft_yolo"] # for occft
+    else:
+        raise ValueError(f"Invalid src_heatmaps_base_path {src_heatmaps_base_path}")
+
+    # load all the paths to the desired folder, containing all the saliency maps, like:
+    # > folder_name
+    #   - ANGRY_canonical.py
+    #   - ANGRY_disgust.py
+    #   - DISGUST_canonical.py
+    #   ...
+    # Gradcam
+    base_paths = {
+        "Bubbles": os.path.join(src_heatmaps_base_path, "Bubbles"),
+        "EXTERNAL": os.path.join(src_heatmaps_base_path, "EXTERNAL"),
+        "GRADCAM": os.path.join(src_heatmaps_base_path, "GRADCAM"),
+    }
+
+    old_paths_to_new_paths = {}
+    for xai_method_name, base_path in base_paths.items():
+        for root, folders, files in os.walk(base_path):
+            # when you meet a folder named heatmap that contains npy heatmaps
+            if os.path.basename(root).lower() in MODEL_NAMES:
+                # extract the upper path (just ./.. above heatmaps)
+                new_path = root.replace(src_heatmaps_folder_basename, f"{dest_heatmaps_folder_basename}")
+                old_paths_to_new_paths[root] = f"{new_path}.png"
+
+    i = 1
+    for old_path, new_path in old_paths_to_new_paths.items():
+        print(f"Processing path {i}")
+        print(f"Old path: {old_path}")
+        print(f"New path: {new_path}")
+        print()
+        i += 1
+        compute_left_right(old_path, new_path)
+
+    # Merge all generated images into a single image
+    output_image_path = os.path.join(dest_heatmaps_folder_path, "merged_image.png")
+    merge_generated_images(old_paths_to_new_paths, output_image_path, MODEL_NAMES, images_per_row=7, vertical=False)
+    output_image_path = os.path.join(dest_heatmaps_folder_path, "merged_image_vertical.png")
+    merge_generated_images(old_paths_to_new_paths, output_image_path, MODEL_NAMES, images_per_row=7, vertical=True)

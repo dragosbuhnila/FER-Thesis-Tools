@@ -269,6 +269,7 @@ def show_heatmaps(heatmaps, row_len=4, title_fontsize=8, alpha=0.5):
         else:
             heatmap_resized = heatmap
 
+
         axs[i].imshow(heatmap_resized, cmap='turbo', alpha=alpha, interpolation='nearest', vmin=0, vmax=1)
         axs[i].set_title(fname, fontsize=title_fontsize)
         axs[i].axis('off')
@@ -280,16 +281,70 @@ def show_heatmaps(heatmaps, row_len=4, title_fontsize=8, alpha=0.5):
     plt.tight_layout()
     plt.show(block=False)
 
-def show_heatmaps_grid(heatmaps_dict, title, alpha=0.5, title_fontsize=10, save_folder=None, save_only=False, block=True):
+
+def background_mask_floodfill(face_bgr: np.ndarray, tol: int = 8, target_size=(75, 85)) -> np.ndarray:
+    """
+    Returns bg_mask (True where it's background) using flood-fill from the corners.
+    The image is resized to `target_size` for processing and then scaled back to the original size.
+    """
+    h, w = face_bgr.shape[:2]
+
+    # Resize the image to the target size for flood-fill processing
+    resized_face = cv2.resize(face_bgr, target_size, interpolation=cv2.INTER_LINEAR)
+    resized_h, resized_w = resized_face.shape[:2]
+
+    # Create a binary mask for the resized image
+    bg = np.zeros((resized_h, resized_w), dtype=bool)
+
+    # Define seed points for the resized image
+    seeds = [(0, 0), (resized_w - 1, 0), (0, resized_h - 1), (resized_w - 1, resized_h - 1)]
+    flags = 4 | cv2.FLOODFILL_MASK_ONLY | (255 << 8)
+
+    for sx, sy in seeds:
+        ff_mask = np.zeros((resized_h + 2, resized_w + 2), np.uint8)
+        tmp = resized_face.copy()
+        cv2.floodFill(
+            tmp, ff_mask,
+            seedPoint=(sx, sy),
+            newVal=(0, 0, 0),
+            loDiff=(tol, tol, tol),
+            upDiff=(tol, tol, tol),
+            flags=flags
+        )
+        bg |= (ff_mask[1:-1, 1:-1] == 255)
+
+    # Perform morphological closing on the resized mask
+    k = np.ones((5, 5), np.uint8)
+    bg_u8 = (bg.astype(np.uint8) * 255)
+    bg_u8 = cv2.morphologyEx(bg_u8, cv2.MORPH_CLOSE, k, iterations=1)
+
+    # Resize the mask back to the original size
+    bg_u8_resized = cv2.resize(bg_u8, (w, h), interpolation=cv2.INTER_NEAREST)
+    final_mask = bg_u8_resized > 0
+
+    return final_mask
+
+
+def apply_bg_nan(hm: np.ndarray, bg_mask: np.ndarray) -> np.ndarray:
+    out = hm.astype(np.float32, copy=True)
+    out[bg_mask] = np.nan
+    return out
+
+
+def show_heatmaps_grid(heatmaps_dict, title, alpha=0.5, title_fontsize=40, labels_fontsize=14, save_folder=None, save_only=False, block=True, EPS=1E-6):
     """
     Displays a grid of heatmaps overlayed on base faces, arranged by [Ground Truth, Predicted] emotions.
     Args:
         heatmaps_dict (dict): Keys are unique names (should contain GT and predicted emotion), values are heatmap arrays.
         alpha (float): Transparency of the heatmap overlay.
-        title_fontsize (int): Font size for labels.
+        title_fontsize (int): Font size for the main title.
+        labels_fontsize (int): Font size for axis labels.
     """
     n = len(EMOTIONS)
-    fig, axs = plt.subplots(n, n, figsize=(2.5*n, 2.5*n))
+    fig, axs = plt.subplots(n, n, figsize=(2.5 * n, 2.5 * n))
+
+    # Create a single colorbar axis
+    cbar_ax = fig.add_axes([0.92, 0.3, 0.02, 0.4])  # [left, bottom, width, height]
 
     for i, emotion_gt in enumerate(EMOTIONS):
         for j, emotion_pred in enumerate(EMOTIONS):
@@ -297,6 +352,14 @@ def show_heatmaps_grid(heatmaps_dict, title, alpha=0.5, title_fontsize=10, save_
                 emotion_full = f"{emotion_gt.upper()}_canonical"
             else:
                 emotion_full = f"{emotion_gt.upper()}_{EMOTIONS_PRED[emotion_pred]}"
+                emotion_full_alternative = None
+                if "Sadness" in emotion_full:
+                    emotion_full_alternative = emotion_full.replace("Sadness", "Sad")
+                if "Anger" in emotion_full:
+                    emotion_full_alternative = emotion_full.replace("Anger", "Angry")
+                if "Happiness" in emotion_full:
+                    emotion_full_alternative = emotion_full.replace("Happiness", "Happy")
+
 
             # Try to find the corresponding heatmap
             heatmap = None
@@ -305,38 +368,56 @@ def show_heatmaps_grid(heatmaps_dict, title, alpha=0.5, title_fontsize=10, save_
                     heatmap = heatmaps_dict[key]
                     break
 
+            if heatmap is None and emotion_full_alternative:
+                for key in heatmaps_dict:
+                    if key.endswith(emotion_full_alternative):
+                        heatmap = heatmaps_dict[key]
+                        break
+
             ax = axs[i, j]
 
             # Get base face
             base_face = get_base_face(emotion_pred)  # show predicted face in column
             img = base_face.image
             img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+            bg_mask = background_mask_floodfill(img, tol=8)
+
             ax.imshow(img_rgb, interpolation='nearest')
 
             if heatmap is not None:
                 if heatmap.shape[:2] != img.shape[:2]:
-                    heatmap_resized = cv2.resize(heatmap, (img.shape[1], img.shape[0]))
+                    h, w = img.shape[0], img.shape[1]
+                    heatmap_resized = cv2.resize(heatmap, (w, h))
                 else:
                     heatmap_resized = heatmap
-                ax.imshow(heatmap_resized, cmap='turbo', alpha=alpha, interpolation='nearest', vmin=0, vmax=1)
+
+                heatmap_resized = apply_bg_nan(heatmap_resized, bg_mask)
+
+                # Display the heatmap with the 'jet' colormap
+                im = ax.imshow(heatmap_resized, cmap='jet', alpha=alpha, interpolation='nearest', vmin=0, vmax=1)
 
             ax.set_xticks([])
             ax.set_yticks([])
 
         # Label rows (True emotions)
-        axs[i, 0].set_ylabel(emotion_gt.capitalize(), fontsize=title_fontsize, labelpad=10)
+        axs[i, 0].set_ylabel(emotion_gt.capitalize(), fontsize=labels_fontsize, labelpad=5)
 
     # Label columns (Predicted emotions)
     for j, emotion_pred in enumerate(EMOTIONS):
-        axs[0, j].set_title(emotion_pred.capitalize(), fontsize=title_fontsize)
+        axs[0, j].set_title(emotion_pred.capitalize(), fontsize=labels_fontsize, pad=5)
 
     # Add big labels "True" and "Predicted"
-    fig.text(0.04, 0.5, 'True', va='center', ha='center', rotation='vertical', fontsize=title_fontsize+4, fontweight='bold')
-    fig.text(0.5, 0.94, 'Predicted', va='center', ha='center', fontsize=title_fontsize+4, fontweight='bold')
+    fig.text(0.05, 0.5, 'True', va='center', ha='center', rotation='vertical', fontsize=labels_fontsize + 4, fontweight='bold')
+    fig.text(0.5, 0.875, 'Predicted', va='center', ha='center', fontsize=labels_fontsize + 4, fontweight='bold')
 
-    fig.suptitle(title)
+    # Add a color bar
+    cbar = fig.colorbar(im, cax=cbar_ax)
+    cbar.set_label('Intensity', fontsize=labels_fontsize)
 
-    plt.tight_layout(rect=[0.08, 0.08, 0.95, 0.9])
+    fig.suptitle(title, fontsize=labels_fontsize*2, y=0.92)
+
+    plt.tight_layout(rect=[0.05, 0.05, 0.9, 0.9])
 
     # Save the figure if save_path is provided
     if save_folder:
@@ -352,5 +433,6 @@ def show_heatmaps_grid(heatmaps_dict, title, alpha=0.5, title_fontsize=10, save_
     # Show the plot only if save_only is False
     if not save_only:
         plt.show(block=block)
-        
+
     plt.close()
+    

@@ -2,6 +2,43 @@ import numpy as np
 
 from modules.landmark_utils import ROI_ORDER_FACEPARTS
 
+
+
+# ======================================================================================================
+# ============================== Auxiliary and Misc Functions ==========================================
+# ======================================================================================================
+
+def convert_faceparts_roi_means_from_dict_to_vector(stats_dict):
+    """
+    Convert a stats dictionary like {'Left Eyebrow': {'mean': 0.3555507771417289}, 'Right Eyebrow': {'mean': 0.10694237923453793}, ...}
+    to a vector like [0.3555507771417289, 0.10694237923453793, ...] in a fixed order of ROIs.
+    """
+    
+    vector = []
+    for roi in ROI_ORDER_FACEPARTS:
+        if roi in stats_dict:
+            vector.append(stats_dict[roi]['mean'])
+        else:
+            raise ValueError(f"ROI '{roi}' not found in stats dictionary keys: {list(stats_dict.keys())}")
+    return np.array(vector)
+
+
+def sum_div_count(sum, count, zero_div_nan=False):
+    if zero_div_nan:
+        return sum / count if count > 0 else np.nan
+    else:
+        return sum / count if count > 0 else 0
+    
+# ========================================================================================================
+# ========================= End of Auxiliary and Misc Functions ==========================================
+# ========================================================================================================
+
+
+
+# ======================================================================================================
+# ============================== ROI Statistics functions ==============================================
+# ======================================================================================================
+
 def roi_mean(masked_heatmap, pxbypx_weightmap=None, debug=False):
     """
     Compute the mean value of the masked heatmap.
@@ -14,18 +51,51 @@ def roi_mean(masked_heatmap, pxbypx_weightmap=None, debug=False):
     if pxbypx_weightmap is None:
         pxbypx_weightmap = np.ones_like(masked_heatmap)
 
+    # Convert NaN values to 0 for the purpose of summation and division. TODO Best approach in the future would be to exclude the ROI if there's too many NaNs
     heatmap_no_nan = np.nan_to_num(masked_heatmap, nan=0.0)
     heatmap_no_nan_wtd = heatmap_no_nan * pxbypx_weightmap
 
     sum = np.sum(heatmap_no_nan_wtd)
 
     count = np.count_nonzero(~np.isnan(masked_heatmap))
-    mean_value = sum / count if count > 0 else 0
+    mean_value = sum_div_count(sum, count)
 
     if debug:
         print(f"roi_mean: sum={sum}, count={count}, mean_value={mean_value}")  # Debug output
 
     return {"mean": mean_value}
+
+# ========================================================================================================
+# ========================= End of ROI Statistics functions ==============================================
+# ========================================================================================================
+
+
+
+# ========================================================================================================
+# ============================== Comparison functions for statistics =====================================
+# =========================================================================================================
+
+def compare_meandif_pxbypx(heatmap1, heatmap2):
+    """
+    Compare the pixel-by-pixel mean difference between two heatmaps.
+    Args:
+        heatmap1 (np.ndarray): First heatmap array.
+        heatmap2 (np.ndarray): Second heatmap array.
+    Returns:
+        float: The mean of the absolute differences between the two heatmaps.
+    """
+
+    if heatmap1.shape != heatmap2.shape:
+        raise ValueError(f"Heatmaps must have the same shape for comparison, instead got {heatmap1.shape} and {heatmap2.shape}.")
+
+    # Compute the absolute difference between the two heatmaps
+    abs_diff = np.abs(heatmap1 - heatmap2)
+
+    # Best approach is to compute the mean of the absolute differences, ignoring NaNs, but we don't do that for meandif so to mantain consistency we'll do like we do there
+    mean_diff = sum_div_count(np.nansum(abs_diff), np.count_nonzero(~np.isnan(abs_diff)))
+
+    return mean_diff
+
 
 def compare_dif(stats1, stats2):
     """
@@ -61,6 +131,7 @@ def compare_dif(stats1, stats2):
 
     return differences
 
+
 def compare_meandif(stats1, stats2):
     """
     Compare the mean of the differences of means.
@@ -71,9 +142,10 @@ def compare_meandif(stats1, stats2):
         dict: A dictionary containing the differences in mean values.
     """
     differences = compare_dif(stats1, stats2)
-    mean_diff = sum(differences.values()) / len(differences) if differences else 0
+    mean_diff = sum_div_count(sum(differences.values()), len(differences)) if differences else 0
     
     return mean_diff
+
 
 def compare_difmean(stats1, stats2):
     """
@@ -103,38 +175,3 @@ def compare_difmean(stats1, stats2):
     mean2 = np.mean([next(iter(v.values())) for v in stats2.values()])
 
     return abs(mean1 - mean2)
-
-def compare_meandif_pxbypx(heatmap1, heatmap2):
-    """
-    Compare the pixel-by-pixel mean difference between two heatmaps.
-    Args:
-        heatmap1 (np.ndarray): First heatmap array.
-        heatmap2 (np.ndarray): Second heatmap array.
-    Returns:
-        float: The mean of the absolute differences between the two heatmaps.
-    """
-
-    if heatmap1.shape != heatmap2.shape:
-        raise ValueError(f"Heatmaps must have the same shape for comparison, instead got {heatmap1.shape} and {heatmap2.shape}.")
-
-    # Compute the absolute difference between the two heatmaps
-    abs_diff = np.abs(heatmap1 - heatmap2)
-
-    # Compute the mean of the absolute differences, ignoring NaNs
-    mean_diff = np.nanmean(abs_diff)
-
-    return mean_diff
-
-def convert_faceparts_roi_means_from_dict_to_vector(stats_dict):
-    """
-    Convert a stats dictionary like {'Left Eyebrow': {'mean': 0.3555507771417289}, 'Right Eyebrow': {'mean': 0.10694237923453793}, ...}
-    to a vector like [0.3555507771417289, 0.10694237923453793, ...] in a fixed order of ROIs.
-    """
-    
-    vector = []
-    for roi in ROI_ORDER_FACEPARTS:
-        if roi in stats_dict:
-            vector.append(stats_dict[roi]['mean'])
-        else:
-            raise ValueError(f"ROI '{roi}' not found in stats dictionary keys: {list(stats_dict.keys())}")
-    return np.array(vector)

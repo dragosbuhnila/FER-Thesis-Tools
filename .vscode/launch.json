@@ -56,6 +56,54 @@
                 "PYTHONPATH": "${workspaceFolder}"
             },
             "justMyCode": true
-        }
+        },
+        {  // & "C:/Users/Dragos/Roba/Lectures/YM2.2/Thesis/d3 Masks/.venv/Scripts/python.exe" "c:/Users/Dragos/Roba/Lectures/YM2.2/Thesis/d3 Masks/compare_canonicals.py" 6
+            "name": "left-right",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Dragos\\Roba\\Lectures\\YM2.2\\Thesis\\d3 Masks\\compare_canonicals.py",
+            "console": "integratedTerminal",
+            "args": ["6"],
+        },
+        {  // & "C:/Users/Dragos/Roba/Lectures/YM2.2/Thesis/d3 Masks/.venv/Scripts/python.exe" "c:/Users/Dragos/Roba/Lectures/YM2.2/Thesis/d3 Masks/compare_canonicals.py" 3 2 rebleo lucrug
+            "name": "compare_numerical rebleo lucrug",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Dragos\\Roba\\Lectures\\YM2.2\\Thesis\\d3 Masks\\compare_canonicals.py",
+            "console": "integratedTerminal",
+            "args": ["3", "2", "rebleo", "lucrug"],
+        }, 
+        {  // & "C:/Users/Dragos/Roba/Lectures/YM2.2/Thesis/d3 Masks/.venv/Scripts/python.exe" "c:/Users/Dragos/Roba/Lectures/YM2.2/Thesis/d3 Masks/compare_canonicals.py" 5 2 best worst
+            "name": "folders_aggr best vs worst",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Dragos\\Roba\\Lectures\\YM2.2\\Thesis\\d3 Masks\\compare_canonicals.py",
+            "console": "integratedTerminal",
+            "args": ["5", "2", "best", "worst"],
+        },
+        {  // & "C:/Users/Dragos/Roba/Lectures/YM2.2/Thesis/d3 Masks/.venv/Scripts/python.exe" "c:/Users/Dragos/Roba/Lectures/YM2.2/Thesis/d3 Masks/compare_canonicals.py" 3 2 rebleo lucrug
+            "name": "rebleo vs lucrug",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Dragos\\Roba\\Lectures\\YM2.2\\Thesis\\d3 Masks\\compare_canonicals.py",
+            "console": "integratedTerminal",
+            "args": ["3", "2", "rebleo", "lucrug"],
+        },
+        {  // & "C:/Users/Dragos/Roba/Lectures/YM2.2/Thesis/d3 Masks/.venv/Scripts/python.exe" "c:/Users/Dragos/Roba/Lectures/YM2.2/Thesis/d3 Masks/compare_canonicals.py" 3 2 best worst
+            "name": "best vs worst",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Dragos\\Roba\\Lectures\\YM2.2\\Thesis\\d3 Masks\\compare_canonicals.py",
+            "console": "integratedTerminal",
+            "args": ["3", "2", "best", "worst"],
+        },
+                {  // & "C:/Users/Dragos/Roba/Lectures/YM2.2/Thesis/d3 Masks/.venv/Scripts/python.exe" "c:/Users/Dragos/Roba/Lectures/YM2.2/Thesis/d3 Masks/compare_canonicals.py" 3 2 occft_pattlite_bub amaesc
+            "name": "pattlite_bub vs amaesc",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Dragos\\Roba\\Lectures\\YM2.2\\Thesis\\d3 Masks\\compare_canonicals.py",
+            "console": "integratedTerminal",
+            "args": ["3", "2", "occft_pattlite_bub", "amaesc"],
+        },
     ]
 }

@@ -11,9 +11,9 @@ from modules.mask_n_heatmap_utils import mask_face_circles, mask_face_dots, mask
 
 # === show dots, full-masks, or inverse-masks ===
 # MASK_TYPE = "dots" 
-MASK_TYPE = "circles"
+# MASK_TYPE = "circles"
 # MASK_TYPE = "full"  
-# MASK_TYPE = "inverse"  
+MASK_TYPE = "inverse"  
 
 MASK_COLOR = (54, 61, 52) # Good ones: graphite_gray: (54, 61, 52); 
 
@@ -398,7 +398,7 @@ if __name__ == "__main__":
                         # Plot the landmarks. Note that different AUs may want use different drawing settings, which is why we're doing this in a loop AU by AU
                         if MASK_TYPE == "dots":
                             latest_img = mask_face_dots(latest_img, landmark_coordinates)
-                        if MASK_TYPE == "circles":
+                        elif MASK_TYPE == "circles":
                             latest_img = mask_face_circles(latest_img, landmark_coordinates, mask_color=MASK_COLOR)
                         elif MASK_TYPE == "full":
                             latest_img = mask_face_lines(latest_img, landmark_coordinates, fill=closed_curve, mask_color=MASK_COLOR) # green: 0, 255, 110
@@ -470,7 +470,7 @@ if __name__ == "__main__":
                 # Plot the landmarks. Note that different AUs may want use different drawing settings, which is why we're doing this in a loop AU by AU
                 if MASK_TYPE == "dots":
                     latest_img = mask_face_dots(latest_img, landmark_coordinates)
-                if MASK_TYPE == "circles":
+                elif MASK_TYPE == "circles":
                     latest_img = mask_face_circles(latest_img, landmark_coordinates, mask_color=MASK_COLOR)
                 elif MASK_TYPE == "full":
                     latest_img = mask_face_lines(latest_img, landmark_coordinates, fill=closed_curve, mask_color=MASK_COLOR)

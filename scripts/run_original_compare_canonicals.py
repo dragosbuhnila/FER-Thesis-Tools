@@ -4,11 +4,37 @@ import os
 # Define paths
 PYTHON_EXE = os.path.abspath("./.venv/Scripts/python.exe")
 SCRIPT = os.path.abspath("./compare_canonicals.py")
-MERGING_SCRIPT = os.path.abspath("./scripts/make_images_grid.py")
-METHOD = 4 # 4 - organize_folders_aggregated
+MERGING_SCRIPT = os.path.abspath("./scripts/merge_images_in_grid.py")
+METHOD = 3 # 3 - compare_canonicals
+PHASE = 1
 
-# Define comparisons (uncommented ones from the batch file)
+# network names:
+# "convnext_grad":    
+# "efficientnet_grad":
+# "inceptionv3_grad": 
+# "pattlite_grad":    
+# "resnet_grad":      
+# "vgg19_grad":       
+# "yolo_grad"
+
+# Define comparisons: total = 11 + 36 + 18 + 3 = 68
 comparisons = [
+    # 0) First comparisons (decided in August): 
+    # best model Convnext vs FEDMAR and MARFRO [78%] | 
+    ("convnext_grad", "fedmar"),
+    ("convnext_grad", "marfro"),
+    ("convnext_bub", "fedmar"),
+    ("convnext_bub", "marfro"),
+    ("convnext_ext", "fedmar"),
+    ("convnext_ext", "marfro"),
+    # best vs worst individuals: FEDMAR [78%] vs MARFRO [78%] vs MATVIN [55%]
+    ("fedmar", "matvin"),
+    ("marfro", "matvin"),
+    ("fedmar", "marfro"),
+    # gender and tails (tails calculated with mean and stdev: upper 17 and lower 17)
+    ("men", "women"),
+    ("best", "worst"),
+
     # 1) 76% (4 networks vs 3 persons)
     # _________________________________________________________________
     # efficientnet      vs      fedama
@@ -112,9 +138,15 @@ comparisons = [
 
 ]
 
+print(f"Total comparisons to run: {len(comparisons)}")
+exit(0)
+
 # Run comparisons
 for subject1, subject2 in comparisons:
     print(f"Running comparison: {subject1} vs {subject2}")
-    subprocess.run([PYTHON_EXE, SCRIPT, str(METHOD), subject1, subject2], check=True)
-
+    subprocess.run([PYTHON_EXE, SCRIPT, str(METHOD), str(PHASE), subject1, subject2], check=True)
 print("All comparisons completed.")
+
+# Merge resulting images into grids
+print("Merging resulting images into grids...")
+subprocess.run([PYTHON_EXE, MERGING_SCRIPT], check=True)
