@@ -1,10 +1,10 @@
 import os
 import pickle
 
-RANKING_FILE = os.path.join("saliency_maps", "human_Results", "testers_ranking.pkl")
-GENDER_FILE = os.path.join("saliency_maps", "human_Results", "testers_gender.txt")
+RANKING_FILE = os.path.join("saliency_maps", "HEATMAPS_humans_phase1", "Results", "testers_ranking.pkl")
+GENDER_FILE = os.path.join("saliency_maps", "HEATMAPS_humans_phase1", "Results", "testers_gender.txt")
 
-NAME_SETS_OUTPUT_FILENAME = os.path.join("saliency_maps", "human_Results", "testers_name_sets.pkl")
+NAME_SETS_OUTPUT_FILENAME = os.path.join("saliency_maps", "HEATMAPS_humans_phase1", "Results", "testers_name_sets.pkl")
 if not os.path.exists(NAME_SETS_OUTPUT_FILENAME):
     os.makedirs(os.path.dirname(NAME_SETS_OUTPUT_FILENAME), exist_ok=True)
 

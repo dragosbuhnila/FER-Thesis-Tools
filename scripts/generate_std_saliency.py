@@ -8,7 +8,7 @@ from modules.visualize import plot_matrix
 
 # =====================================================================================
 
-some_saliency_map_path = "saliency_maps/human_Results/AGAPIG/heatmaps/ANGRY_canonical.npy"
+some_saliency_map_path = "saliency_maps/HEATMAPS_humans_phase1/Results/AGAPIG/heatmaps/ANGRY_canonical.npy"
 save_path = "saliency_maps/"
 
 # =====================================================================================

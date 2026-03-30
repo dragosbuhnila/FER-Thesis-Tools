@@ -34,7 +34,7 @@ ROI_DEBUG_FOLDER = "ROI_debug" if DEBUG_ROIs else None
 
 # WARNING: if you run this as main, the path will be relative to the current working directory, thus incorrect
 SALIENCY_MAPS_DIR = os.path.join(".", "saliency_maps")
-HUMAN_RESULTS_DIR = os.path.join(SALIENCY_MAPS_DIR, "human_Results")
+HUMAN_RESULTS_DIR = os.path.join(SALIENCY_MAPS_DIR, "HEATMAPS_humans_phase1", "Results")
 OUTPUTS_DIR = os.path.join(SALIENCY_MAPS_DIR, "zzz_other_and_zips")
 COMPARISON_GRID_FOLDER = os.path.join(OUTPUTS_DIR, "output_comparisons_meandif")
 
@@ -449,7 +449,7 @@ def compare_single_person():
 
 # 2) Compare top performers' heatmaps across a selected emotion (again, only uses the diagonal heatmap of the selected emotion, i.e. only correct guesses)
 def compare_top_and_emotions():
-    testers_ranking_path = "./saliency_maps/human_Results/testers_ranking.pkl"
+    testers_ranking_path = "./saliency_maps/HEATMAPS_humans_phase1/Results/testers_ranking.pkl"
     if os.path.exists(testers_ranking_path):
         with open(testers_ranking_path, "rb") as f:
             testers_ranking = pickle.load(f)
@@ -999,7 +999,7 @@ def compute_left_right(source_folder_path, output_npy_path):
 
 
 
-def compute_left_right_wrapper(src_heatmaps_folder_basename="HEATMAPS_occft"):
+def compute_left_right_wrapper(src_heatmaps_folder_basename="HEATMAPS_machines_phase2"):
     src_heatmaps_base_path = os.path.join(SALIENCY_MAPS_DIR, src_heatmaps_folder_basename)
     dest_heatmaps_folder_basename = src_heatmaps_folder_basename + "_left_right_analysis"
     dest_heatmaps_folder_path = src_heatmaps_base_path.replace(src_heatmaps_folder_basename, dest_heatmaps_folder_basename)

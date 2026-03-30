@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 BASE_DIR = os.path.join(".", "saliency_maps")
-HUMAN_SALIENCIES_DIR = os.path.join(BASE_DIR, "human_Results")
+HUMAN_SALIENCIES_DIR = os.path.join(BASE_DIR, "HEATMAPS_humans_phase1", "Results")
 BASEFACE = os.path.join(BASE_DIR, "basefaces", "baseface_neutral_reshaped.png")
 
 def overlay_saliency_with_nans(baseface_path, saliency_path):

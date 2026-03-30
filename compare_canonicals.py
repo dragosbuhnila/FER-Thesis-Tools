@@ -76,10 +76,10 @@ if __name__ == "__main__":
         
         elif choice == '6':
             if len(sys.argv) == 2:
-                print("  >> Computing left-right heatmaps for folder: HEATMAPS_occft")
-                compute_left_right_wrapper("HEATMAPS_occft")
-                print("  >> Computing left-right heatmaps for folder: HEATMAPS_occft")
-                compute_left_right_wrapper("HEATMAPS_fede")
+                print("  >> Computing left-right heatmaps for folder: HEATMAPS_machines_phase2")
+                compute_left_right_wrapper("HEATMAPS_machines_phase2")
+                print("  >> Computing left-right heatmaps for folder: HEATMAPS_machines_phase1")
+                compute_left_right_wrapper("HEATMAPS_machines_phase1")
                 exit(0)
             else:
                 print("  >> Please only provide function choice (6 in this case).")

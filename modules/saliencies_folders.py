@@ -16,9 +16,11 @@ import os
 
 # 0) Important folders
 BASE_DIR = os.path.join(".", "saliency_maps")
-HEATMAPS_FEDE_DIR_BASENAME = "HEATMAPS_fede"
-HEATMAPS_OCCFT_DIR_BASENAME = "HEATMAPS_occft"
-HEATMAPS_ALE_DIR_BASENAME = "HEATMAPS_ale"
+HEATMAPS_FEDE_DIR_BASENAME = "HEATMAPS_machines_phase1"
+HEATMAPS_FEDE_DIR_BASENAME_NONAGGR = "HEATMAPS_machines_phase1_not_aggregated"
+HEATMAPS_OCCFT_DIR_BASENAME = "HEATMAPS_machines_phase2"
+HEATMAPS_ADE_DIR_BASENAME = "HEATMAPS_humans_phase1"
+HEATMAPS_ALE_DIR_BASENAME = "HEATMAPS_humans_phase2"
 
 HEATMAPS_ALE_SINGLE_HUMANS_DIR_PATH = os.path.join(BASE_DIR, HEATMAPS_ALE_DIR_BASENAME, "Results")
 
@@ -125,39 +127,39 @@ saliencies_folders_rel_paths_phase2 = {
 
 saliencies_folders_rel_paths_phase1 = {
     # 1a) Single person 1 (first two are best, last is worst)
-    "fedmar":           r"human_Results\FEDMAR\heatmaps",
-    "marfro":           r"human_Results\MARFRO\heatmaps",
-    "matvin":           r"human_Results\MATVIN\heatmaps",
+    "fedmar":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\FEDMAR\heatmaps",
+    "marfro":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\MARFRO\heatmaps",
+    "matvin":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\MATVIN\heatmaps",
 
     # 1b) Single person 2 (3 at 76%, 6 at 75%, 1 at 74%)
     # 76%
-    "fedama":           r"human_Results\FEDAMA\heatmaps",
-    "dalgon":           r"human_Results\DALGON\heatmaps",
-    "paorus":           r"human_Results\PAORUS\heatmaps",
+    "fedama":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\FEDAMA\heatmaps",
+    "dalgon":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\DALGON\heatmaps",
+    "paorus":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\PAORUS\heatmaps",
     # 75%
-    "fraghi":          r"human_Results\FRAGHI\heatmaps",
-    "giugui":          r"human_Results\GIUGUI\heatmaps",
-    "mirtek":          r"human_Results\MIRTEK\heatmaps",
-    "silfer":          r"human_Results\SILFER\heatmaps",
-    "valcol":          r"human_Results\VALCOL\heatmaps",
-    "beafra":          r"human_Results\BEAFRA\heatmaps",
+    "fraghi":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\FRAGHI\heatmaps",
+    "giugui":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\GIUGUI\heatmaps",
+    "mirtek":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\MIRTEK\heatmaps",
+    "silfer":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\SILFER\heatmaps",
+    "valcol":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\VALCOL\heatmaps",
+    "beafra":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\BEAFRA\heatmaps",
     # 74%
-    "edodon":          r"human_Results\EDODON\heatmaps",
+    "edodon":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\EDODON\heatmaps",
 
     # 2) Aggregated persons
-    "men":              r"human_Mappe numpy\mappe aggregate\heatmaps_maschi",
-    "women":            r"human_Mappe numpy\mappe aggregate\heatmaps_femmine",
-    "best":             r"human_Mappe numpy\mappe aggregate\heatmaps_codasup",
-    "worst":            r"human_Mappe numpy\mappe aggregate\heatmaps_codainf",
+    "men":              rf"{HEATMAPS_ADE_DIR_BASENAME}\AGGREGATED\heatmaps_maschi",
+    "women":            rf"{HEATMAPS_ADE_DIR_BASENAME}\AGGREGATED\heatmaps_femmine",
+    "best":             rf"{HEATMAPS_ADE_DIR_BASENAME}\AGGREGATED\heatmaps_codasup",
+    "worst":            rf"{HEATMAPS_ADE_DIR_BASENAME}\AGGREGATED\heatmaps_codainf",
 
     # 3) Bubbles
-    "convnext_bub":     r"canonical\bubbles\bubbles\ConvNeXt\bubbles_adele",
-    "efficientnet_bub": r"canonical\bubbles\bubbles\EfficientNetB1\bubbles_adele",
-    "inceptionv3_bub":  r"canonical\bubbles\bubbles\InceptionV3\bubbles_adele",
-    "pattlite_bub":     r"canonical\bubbles\bubbles\PattLite\bubbles_adele",
-    "resnet_bub":       r"canonical\bubbles\bubbles\ResNet\bubbles_adele",
-    "vgg19_bub":        r"canonical\bubbles\bubbles\VGG19\bubbles_adele",
-    "yolo_bub":         r"canonical\bubbles\bubbles\YOLO\bubbles_adele",
+    "convnext_bub":     rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\ConvNeXt\bubbles_adele",
+    "efficientnet_bub": rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\EfficientNetB1\bubbles_adele",
+    "inceptionv3_bub":  rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\InceptionV3\bubbles_adele",
+    "pattlite_bub":     rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\PattLite\bubbles_adele",
+    "resnet_bub":       rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\ResNet\bubbles_adele",
+    "vgg19_bub":        rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\VGG19\bubbles_adele",
+    "yolo_bub":         rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\YOLO\bubbles_adele",
 
     # 4) External
     "convnext_ext":     rf"{HEATMAPS_FEDE_DIR_BASENAME}\EXTERNAL\ConvNeXt",
@@ -179,7 +181,7 @@ saliencies_folders_rel_paths_phase1 = {
 }
 
 # 2) Tester groups (used for saliencies)
-TESTERS_NAME_SETS_PHASE1_PATH = os.path.join(BASE_DIR, "human_Results", "testers_name_sets.pkl")
+TESTERS_NAME_SETS_PHASE1_PATH = os.path.join(BASE_DIR, "HEATMAPS_humans_phase1", "Results", "testers_name_sets.pkl")
 testers_name_sets_phase1 = {}
 with open(TESTERS_NAME_SETS_PHASE1_PATH, "rb") as f:
     import pickle

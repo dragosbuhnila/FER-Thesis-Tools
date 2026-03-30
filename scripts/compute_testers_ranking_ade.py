@@ -1,7 +1,7 @@
 import os
 import pickle
 
-base_folder = "./saliency_maps/human_Results"
+base_folder = "./saliency_maps/HEATMAPS_humans_phase1/Results"
 
 def extract_precision(report_path):
     with open(report_path, encoding="utf-8") as f:

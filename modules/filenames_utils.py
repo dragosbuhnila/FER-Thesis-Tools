@@ -31,7 +31,7 @@ def get_emotion_from_heatmap_relpath(heatmap_relative_path):
     if "std_saliency_map" in heatmap_relative_path:
         return heatmap_relative_path.split('/')[-1].split('_')[-1].split('.')[0].upper()
 
-    # Case 2) e.g.: saliency_maps\human_Results\AGAPIG\heatmaps\ANGRY_Disgust.npy
+    # Case 2) e.g.: saliency_maps\HEATMAPS_humans_phase1\Results\AGAPIG\heatmaps\ANGRY_Disgust.npy
     caps_heatmap_relative_path = heatmap_relative_path.upper()
     emotion_present = False
     if "ANGRY" in caps_heatmap_relative_path:

@@ -154,7 +154,7 @@ def main(output_path: str, limite: float, name: str):
 
     # Files
     df_path = os.path.join(output_path, f"{name}.csv")
-    fix_path = os.path.join("..", "saliency_maps/HEATMAPS_ale/Results", name, "output_csv", "output.csv")
+    fix_path = os.path.join("..", "saliency_maps/HEATMAPS_humans_phase2/Results", name, "output_csv", "output.csv")
 
     # Sanity checks
     if not os.path.exists(model_path):
@@ -577,7 +577,7 @@ names = [
 ]
 
 for name in names:
-    output_path = f"../saliency_maps/HEATMAPS_ale/Results/{name}"
+    output_path = f"../saliency_maps/HEATMAPS_humans_phase2/Results/{name}"
     limite = 1
     try:
         main(output_path, limite, name)
