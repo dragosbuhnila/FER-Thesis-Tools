@@ -8,7 +8,7 @@ import numpy as np
 import cv2
 import pandas as pd
 
-from modules.basefaces import get_base_face, basefaces
+from modules.basefaces import get_base_face, basefaces, try_load_occluded
 from modules.filenames_utils import EMOTIONS, EMOTIONS_PRED
 
 
@@ -318,9 +318,11 @@ def background_mask_floodfill(face_bgr: np.ndarray, tol: int = 8, target_size=(7
     bg_u8 = (bg.astype(np.uint8) * 255)
     bg_u8 = cv2.morphologyEx(bg_u8, cv2.MORPH_CLOSE, k, iterations=1)
 
-    # Resize the mask back to the original size
-    bg_u8_resized = cv2.resize(bg_u8, (w, h), interpolation=cv2.INTER_NEAREST)
-    final_mask = bg_u8_resized > 0
+    # # Resize the mask back to the original size
+    # bg_u8_resized = cv2.resize(bg_u8, (w, h), interpolation=cv2.INTER_NEAREST)
+    # final_mask = bg_u8_resized > 0
+
+    final_mask = bg_u8 > 0
 
     return final_mask
 
@@ -331,20 +333,37 @@ def apply_bg_nan(hm: np.ndarray, bg_mask: np.ndarray) -> np.ndarray:
     return out
 
 
-def show_heatmaps_grid(heatmaps_dict, title, alpha=0.5, title_fontsize=40, labels_fontsize=14, save_folder=None, save_only=False, block=True, EPS=1E-6):
+def show_heatmaps_grid(heatmaps_dict, title, alpha=0.5, title_fontsize=40, labels_fontsize=14, save_folder=None, save_only=False, block=True, EPS=1E-6, subset=None):
     """
     Displays a grid of heatmaps overlayed on base faces, arranged by [Ground Truth, Predicted] emotions.
-    Args:
-        heatmaps_dict (dict): Keys are unique names (should contain GT and predicted emotion), values are heatmap arrays.
-        alpha (float): Transparency of the heatmap overlay.
-        title_fontsize (int): Font size for the main title.
-        labels_fontsize (int): Font size for axis labels.
+    If `subset` is provided, the displayed canonical face may be replaced by an occluded canonical
+    face according to the subset rules. However, the background mask used for applying NaNs is
+    always computed from the original (unoccluded) baseface image.
     """
     n = len(EMOTIONS)
     fig, axs = plt.subplots(n, n, figsize=(2.5 * n, 2.5 * n))
 
     # Create a single colorbar axis
     cbar_ax = fig.add_axes([0.92, 0.3, 0.02, 0.4])  # [left, bottom, width, height]
+
+    # parse subset into mode
+    subset_mode = None
+    subset_target = None
+    subset_posneg = None
+    if subset:
+        if subset == 'match':
+            subset_mode = 'match'
+        elif subset == 'mismatch':
+            subset_mode = None  # user preference: behave like original (no occlusion)
+        else:
+            # expected format like "positive_ANGRY" or "negative_SAD"
+            parts = subset.split('_', 1)
+            if len(parts) == 2 and parts[0] in ('positive', 'negative'):
+                subset_mode = 'targeted'
+                subset_target = parts[1].upper()
+                subset_posneg = 'POS' if parts[0] == 'positive' else 'NEG'
+            else:
+                subset_mode = None  # unknown subset -> fallback to original behavior
 
     for i, emotion_gt in enumerate(EMOTIONS):
         for j, emotion_pred in enumerate(EMOTIONS):
@@ -360,7 +379,6 @@ def show_heatmaps_grid(heatmaps_dict, title, alpha=0.5, title_fontsize=40, label
                 if "Happiness" in emotion_full:
                     emotion_full_alternative = emotion_full.replace("Happiness", "Happy")
 
-
             # Try to find the corresponding heatmap
             heatmap = None
             for key in heatmaps_dict:
@@ -368,7 +386,7 @@ def show_heatmaps_grid(heatmaps_dict, title, alpha=0.5, title_fontsize=40, label
                     heatmap = heatmaps_dict[key]
                     break
 
-            if heatmap is None and emotion_full_alternative:
+            if heatmap is None and 'emotion_full_alternative' in locals() and emotion_full_alternative:
                 for key in heatmaps_dict:
                     if key.endswith(emotion_full_alternative):
                         heatmap = heatmaps_dict[key]
@@ -376,26 +394,46 @@ def show_heatmaps_grid(heatmaps_dict, title, alpha=0.5, title_fontsize=40, label
 
             ax = axs[i, j]
 
-            # Get base face
-            base_face = get_base_face(emotion_pred)  # show predicted face in column
-            img = base_face.image
-            img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            # Decide which image to display (possibly occluded) and which original baseface to use for bg mask
+            # Default: show predicted baseface, mask from predicted baseface
+            display_bgr = get_base_face(emotion_pred).image.copy()
 
-            bg_mask = background_mask_floodfill(img, tol=8)
+            if subset_mode == 'match':
+                # For 'match' use occluded GT base (GT_occ_with_GT_POS) for display (same occluded for entire row)
+                oc_img = try_load_occluded(emotion_gt.upper(), emotion_gt.upper(), 'POS')
+                if oc_img is not None:
+                    display_bgr = oc_img
+            elif subset_mode == 'targeted':
+                # For targeted subsets (e.g., positive_ANGRY): occluder is subset_target, posneg from subset_posneg.
+                # Display per-row occluded GT_occ_with_{TARGET}_{POSNEG}. If not found, fallback to default display.
+                oc_img = try_load_occluded(emotion_gt.upper(), subset_target, subset_posneg)
+                if oc_img is not None:
+                    display_bgr = oc_img
+
+            # Get background mask from the original (unoccluded) baseface image (important)
+            base_face = get_base_face(emotion_pred)  # show predicted face in column
+            mask_baseface_img = base_face.image
+
+            bg_mask = background_mask_floodfill(mask_baseface_img, tol=8)
+
+            if emotion_gt.upper() == "NEUTRAL":
+                pass
+
+            # Prepare display image (convert BGR->RGB for matplotlib)
+            target_size=(75, 85)
+            if display_bgr.shape[:2] != target_size:
+                display_bgr = cv2.resize(display_bgr, target_size, interpolation=cv2.INTER_LINEAR)
+            img_rgb = cv2.cvtColor(display_bgr, cv2.COLOR_BGR2RGB)
 
             ax.imshow(img_rgb, interpolation='nearest')
 
             if heatmap is not None:
-                if heatmap.shape[:2] != img.shape[:2]:
-                    h, w = img.shape[0], img.shape[1]
-                    heatmap_resized = cv2.resize(heatmap, (w, h))
-                else:
-                    heatmap_resized = heatmap
-
-                heatmap_resized = apply_bg_nan(heatmap_resized, bg_mask)
+                heatmap = apply_bg_nan(heatmap, bg_mask)
 
                 # Display the heatmap with the 'jet' colormap
-                im = ax.imshow(heatmap_resized, cmap='jet', alpha=alpha, interpolation='nearest', vmin=0, vmax=1)
+                im = ax.imshow(heatmap, cmap='jet', alpha=alpha, interpolation='nearest', vmin=0, vmax=1)
+
+
 
             ax.set_xticks([])
             ax.set_yticks([])
@@ -411,9 +449,10 @@ def show_heatmaps_grid(heatmaps_dict, title, alpha=0.5, title_fontsize=40, label
     fig.text(0.05, 0.5, 'True', va='center', ha='center', rotation='vertical', fontsize=labels_fontsize + 4, fontweight='bold')
     fig.text(0.5, 0.875, 'Predicted', va='center', ha='center', fontsize=labels_fontsize + 4, fontweight='bold')
 
-    # Add a color bar
-    cbar = fig.colorbar(im, cax=cbar_ax)
-    cbar.set_label('Intensity', fontsize=labels_fontsize)
+    # Add a color bar (only if at least one heatmap was plotted)
+    if 'im' in locals():
+        cbar = fig.colorbar(im, cax=cbar_ax)
+        cbar.set_label('Intensity', fontsize=labels_fontsize)
 
     fig.suptitle(title, fontsize=labels_fontsize*2, y=0.92)
 

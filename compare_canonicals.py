@@ -4,6 +4,8 @@ import sys
 from modules.compare_saliency_maps import compare_single_person, compare_top_and_emotions, compare_two_subjects, compare_two_subjects_cmd, compute_left_right_wrapper, create_organized_folders_aggr, create_organized_folders_aggr_cmd, create_organized_folders_gran, create_organized_folders_gran_cmd, print_compare_saliency_maps_macros, recalculate_all_stats, test_comparison
 
 import warnings
+
+from modules.filenames_utils import CANONICAL_SUBSETS
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="All-NaN slice encountered")
 
 
@@ -46,21 +48,21 @@ if __name__ == "__main__":
             compare_top_and_emotions()
 
         elif choice == "3":
-            if len(sys.argv) == 5:
-                compare_two_subjects_cmd(sys.argv[2], sys.argv[3], sys.argv[4])
+            if len(sys.argv) == 5 or (len(sys.argv) == 6 and sys.argv[5] in CANONICAL_SUBSETS):
+                compare_two_subjects_cmd(sys.argv[2], sys.argv[3], sys.argv[4], subset=sys.argv[5])
                 exit(0)
             elif len(sys.argv) > 1:
-                print("  >> Please provide either: \n> <choice> + <phase> + <subject_name_1> + <subject_name_2> \n> nothing")
+                print("  >> Please provide either: \n> <choice> + <phase> + <subject_name_1> + <subject_name_2> \n> <choice> + <phase> + <subject_name_1> + <subject_name_2> + <subset> \n> nothing")
             else:
                 compare_two_subjects()
             continue
 
         elif choice == "4": 
-            if len(sys.argv) == 5:
-                create_organized_folders_aggr_cmd(sys.argv[2], sys.argv[3], sys.argv[4])
+            if len(sys.argv) == 5 or (len(sys.argv) == 6 and sys.argv[5] in CANONICAL_SUBSETS):
+                create_organized_folders_aggr_cmd(sys.argv[2], sys.argv[3], sys.argv[4], subset=sys.argv[5])
                 exit(0)
             elif len(sys.argv) > 1:
-                print("  >> Please provide either: \n> <choice> + <phase> + <subject_name_1> + <subject_name_2> \n> nothing")
+                print("  >> Please provide either: \n> <choice> + <phase> + <subject_name_1> + <subject_name_2> \n> <choice> + <phase> + <subject_name_1> + <subject_name_2> + <subset> \n> nothing")
             else:
                 create_organized_folders_aggr()
             continue

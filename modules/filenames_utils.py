@@ -122,3 +122,22 @@ EMOTIONS_PRED = {
     "SAD": "Sadness",
     "SURPRISE": "Surprise"
 }
+
+CANONICAL_SUBSETS = [
+    "match",
+    "mismatch",
+    "negative_ANGRY",
+    "negative_DISGUST",
+    "negative_FEAR",
+    "negative_HAPPY",
+    "negative_NEUTRAL",
+    "negative_SAD",
+    "negative_SURPRISE",
+    "positive_ANGRY",
+    "positive_DISGUST",
+    "positive_FEAR",
+    "positive_HAPPY",
+    "positive_NEUTRAL",
+    "positive_SAD",
+    "positive_SURPRISE",
+]

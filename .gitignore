@@ -9,5 +9,6 @@ ROI_debug/
 zzz_output_means_vectors/
 output_comparisons_meandif/
 scripts/Canonical faces cutted
+saliency_maps.rar
 
 __pycache__

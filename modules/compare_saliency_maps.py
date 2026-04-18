@@ -13,7 +13,7 @@ from modules.mask_n_heatmap_utils import compute_pixel_repetition_heatmap, get_r
 from modules.save_load_utils import load_statistics, save_statistics
 from modules.visualize import make_comparison_grid_combinations, make_comparison_grid_versus, plot_matrix, show_grid_matplotlib, show_heatmaps, show_heatmaps_grid
 from modules.roi_statistics import compare_difmean, compare_meandif_pxbypx, convert_faceparts_roi_means_from_dict_to_vector, roi_mean, compare_meandif
-from modules.saliencies_folders import HEATMAPS_ALE_SINGLE_HUMANS_DIR_PATH, saliencies_folders_rel_paths_phase1, saliencies_folders_rel_paths_phase2, testers_name_sets_phase1, testers_name_sets_phase2
+from modules.saliencies_folders import HEATMAPS_ALE_SINGLE_HUMANS_DIR_PATH, saliencies_folders_rel_paths_phase1, saliencies_folders_rel_paths_phase2, testers_name_sets_phase1, testers_name_sets_phase2, saliencies_folders_rel_paths_phase2_subsets
 
 # >======================================================================================
 # >=========== MACROS ===================================================================
@@ -316,7 +316,7 @@ def do_group_comparison_combinations(heatmaps_relpaths, debug, save_only=False, 
 
         plt.show()
 
-def do_group_comparison_versus(heatmaps_relpaths_1, heatmaps_relpaths_2, debug, save_only, force_recalculate_stats, subject_1=None, subject_2=None):
+def do_group_comparison_versus(heatmaps_relpaths_1, heatmaps_relpaths_2, debug, save_only, force_recalculate_stats, subject_1=None, subject_2=None, subset=None):
     # 1) Compute statistics for both groups
     unique_heatmap_names_1, heatmaps_1, stats_list_faceparts_1 = compute_group_of_heatmaps_statistics(heatmaps_relpaths_1, debug, force_recalculate_stats, diagonal_only=False, subject_given=subject_1)
     unique_heatmap_names_2, heatmaps_2, stats_list_faceparts_2 = compute_group_of_heatmaps_statistics(heatmaps_relpaths_2, debug, force_recalculate_stats, diagonal_only=False, subject_given=subject_2)
@@ -363,8 +363,8 @@ def do_group_comparison_versus(heatmaps_relpaths_1, heatmaps_relpaths_2, debug, 
 
 
 
-        show_heatmaps_grid(heatmaps_1, title=f"Comparison {subject_1} VS {subject_2} - {subject_1}_heatmaps", alpha=0.5, save_folder=COMPARISON_GRID_FOLDER, save_only=save_only, block=False)
-        show_heatmaps_grid(heatmaps_2, title=f"Comparison {subject_1} VS {subject_2} - {subject_2}_heatmaps", alpha=0.5, save_folder=COMPARISON_GRID_FOLDER, save_only=save_only, block=False)
+        show_heatmaps_grid(heatmaps_1, title=f"Comparison {subject_1} VS {subject_2} - {subject_1}_heatmaps", alpha=0.5, save_folder=COMPARISON_GRID_FOLDER, save_only=save_only, block=False, subset=subset)
+        show_heatmaps_grid(heatmaps_2, title=f"Comparison {subject_1} VS {subject_2} - {subject_2}_heatmaps", alpha=0.5, save_folder=COMPARISON_GRID_FOLDER, save_only=save_only, block=False, subset=subset)
         show_grid_matplotlib(grid_faceparts, title=f"Comparison {subject_1} VS {subject_2} with {COMPARE_CHOSEN.__name__}()", axis_names=("True", "Predicted"), save_folder=COMPARISON_GRID_FOLDER, save_only=save_only, block=False)
         show_grid_matplotlib(grid_pxbypx_mean, title=f"Comparison {subject_1} VS {subject_2} with compare_meandif_pxbypx()", axis_names=("True", "Predicted"), save_folder=COMPARISON_GRID_FOLDER, save_only=save_only, block=False)
 
@@ -509,11 +509,17 @@ def compare_top_and_emotions():
     do_group_comparison_combinations(heatmaps_relpaths, debug=DO_DEBUG, save_only=False, force_recalculate_stats=FORCE_RECALCULATE_STATS)
 
 
-def get_saliencies_folders_rel_paths(phase):
+def get_saliencies_folders_rel_paths(phase, subset=None):
     if int(phase) == 1:
         saliencies_folders_rel_paths = saliencies_folders_rel_paths_phase1
     elif int(phase) == 2:
-        saliencies_folders_rel_paths = saliencies_folders_rel_paths_phase2
+        if subset is not None:
+            if subset in saliencies_folders_rel_paths_phase2_subsets:
+                saliencies_folders_rel_paths = saliencies_folders_rel_paths_phase2_subsets[subset]
+            else:
+                raise ValueError(f"Invalid subset: {subset}. Available subsets: {', '.join(saliencies_folders_rel_paths_phase2_subsets.keys())}")
+        else:
+            saliencies_folders_rel_paths = saliencies_folders_rel_paths_phase2
     else:
         raise ValueError(f"Invalid phase: {phase}. Please choose either 1 or 2.")
     
@@ -542,8 +548,8 @@ def compare_two_subjects():
 
     compare_two_subjects_cmd(phase, subject_1, subject_2)
 
-def compare_two_subjects_cmd(phase, subject_1, subject_2):
-    saliencies_folders_rel_paths = get_saliencies_folders_rel_paths(phase)
+def compare_two_subjects_cmd(phase, subject_1, subject_2, subset=None):
+    saliencies_folders_rel_paths = get_saliencies_folders_rel_paths(phase, subset)
 
     folder_relpath_1 = saliencies_folders_rel_paths.get(subject_1)
     folder_relpath_2 = saliencies_folders_rel_paths.get(subject_2)
@@ -554,6 +560,14 @@ def compare_two_subjects_cmd(phase, subject_1, subject_2):
 
     folder_path_1 = os.path.join(SALIENCY_MAPS_DIR, folder_relpath_1)
     folder_path_2 = os.path.join(SALIENCY_MAPS_DIR, folder_relpath_2)
+
+    if not os.path.exists(folder_path_1):
+        print(f"  >> Warning: Folder path '{folder_path_1}' does not exist.")
+        return
+    
+    if not os.path.exists(folder_path_2):
+        print(f"  >> Warning: Folder path '{folder_path_2}' does not exist.")
+        return
 
     print(f"Comparing subjects in:\n  {folder_path_1}\n  {folder_path_2}")
 
@@ -566,7 +580,7 @@ def compare_two_subjects_cmd(phase, subject_1, subject_2):
     print(f"  >> Folder 1: Found {len(folder_1_relpaths)} heatmaps_relpaths: {folder_1_relpaths}")
     print(f"  >> Folder 2: Found {len(folder_2_relpaths)} heatmaps_relpaths: {folder_2_relpaths}")
 
-    do_group_comparison_versus(folder_1_relpaths, folder_2_relpaths, debug=DO_DEBUG, save_only=COMPARISONS_SAVEONLY, force_recalculate_stats=FORCE_RECALCULATE_STATS, subject_1=subject_1.upper(), subject_2=subject_2.upper())
+    do_group_comparison_versus(folder_1_relpaths, folder_2_relpaths, debug=DO_DEBUG, save_only=COMPARISONS_SAVEONLY, force_recalculate_stats=FORCE_RECALCULATE_STATS, subject_1=subject_1.upper(), subject_2=subject_2.upper(), subset=subset)
 
 def create_organized_folders_aggr():
     phase = input("Enter phase (1 or 2): ")
@@ -578,7 +592,7 @@ def create_organized_folders_aggr():
 
     create_organized_folders_aggr_cmd(phase, subject_1, subject_2)
 
-def create_organized_folders_aggr_cmd(phase, subject_1, subject_2):
+def create_organized_folders_aggr_cmd(phase, subject_1, subject_2, subset=None):
     """ Extracts the meanvectors for all saliency maps of the aggregated subjects, and organizes the results as follows:
         (> is folder, - is file)
             > ANGRY_ANGRY
@@ -589,7 +603,7 @@ def create_organized_folders_aggr_cmd(phase, subject_1, subject_2):
                 - ANGRY_HAPPY_GROUP2.npy
             > ...
     """
-    saliencies_folders_rel_paths = get_saliencies_folders_rel_paths(phase)
+    saliencies_folders_rel_paths = get_saliencies_folders_rel_paths(phase, subset)
 
     folder_relpath_1 = saliencies_folders_rel_paths.get(subject_1)
     folder_relpath_2 = saliencies_folders_rel_paths.get(subject_2)
@@ -602,7 +616,17 @@ def create_organized_folders_aggr_cmd(phase, subject_1, subject_2):
     folder_path_1 = os.path.join(SALIENCY_MAPS_DIR, folder_relpath_1)
     folder_path_2 = os.path.join(SALIENCY_MAPS_DIR, folder_relpath_2)
 
+    if not os.path.exists(folder_path_1):
+        print(f"  >> Warning: Folder path '{folder_path_1}' does not exist.")
+        return
+    
+    if not os.path.exists(folder_path_2):
+        print(f"  >> Warning: Folder path '{folder_path_2}' does not exist.")
+        return
+
+
     print(f"Comparing subjects in:\n  {folder_path_1}\n  {folder_path_2}")
+
 
     folder_1_filenames = os.listdir(folder_path_1)
     folder_2_filenames = os.listdir(folder_path_2)
@@ -646,7 +670,7 @@ def create_organized_folders_aggr_cmd(phase, subject_1, subject_2):
 
         # Create output folder if it doesn't exist
         emotion_gt_pred = reformat_bad_emotion_gtpred_name(emotion_gt_pred)
-        output_folder = os.path.join(OUTPUTS_DIR, "mean-vectors_organized_aggregated", comparison_subjects, f"{emotion_gt_pred}")
+        output_folder = os.path.join(OUTPUTS_DIR, f"mean-vectors_organized_aggregated_{subset}", comparison_subjects, f"{emotion_gt_pred}")
         os.makedirs(output_folder, exist_ok=True)
 
         # Save the statistics

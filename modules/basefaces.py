@@ -5,6 +5,7 @@ from modules.landmark_utils import detect_facial_landmarks, load_landmark_coordi
 
 
 BASEFACES_FOLDER = "./saliency_maps/basefaces"
+OCCLUDED_BASEFACES_FOLDER_PATH = "./saliency_maps/basefaces/canonical_faces_occluded"
 
 # =============================================================================
 # =============================================================================
@@ -47,6 +48,18 @@ def get_base_face(emotion_full):
         print(f"Base face for emotion {emotion} not found, returning neutral base face.")
         emotion = "NEUTRAL"
     return basefaces[emotion.upper()]
+
+def try_load_occluded(gt_emotion, occluder, posneg):
+    occluded_folder = OCCLUDED_BASEFACES_FOLDER_PATH
+    if not occluded_folder:
+        return None
+    fname = f"{gt_emotion}_occ_with_{occluder}_{posneg}.png"
+    path = os.path.join(occluded_folder, fname)
+    if os.path.exists(path):
+        img = cv2.imread(path)
+        if img is not None:
+            return img
+    return None
 
 # =============================================================================
 # =============================================================================

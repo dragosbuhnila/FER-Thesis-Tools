@@ -7,6 +7,8 @@
 
 
 
+
+
         {
             "name": "Python: Current File",
             "type": "python",
@@ -104,6 +106,14 @@
             "program": "C:\\Users\\Dragos\\Roba\\Lectures\\YM2.2\\Thesis\\d3 Masks\\compare_canonicals.py",
             "console": "integratedTerminal",
             "args": ["3", "2", "occft_pattlite_bub", "amaesc"],
+        },
+        {  // & "C:/Users/Dragos/Roba/Lectures/YM2.2/Thesis/d3 Masks/.venv/Scripts/python.exe" "c:/Users/Dragos/Roba/Lectures/YM2.2/Thesis/d3 Masks/compare_canonicals.py" 3 2 occft_pattlite_bub amaesc match
+            "name": "pattlite_bub vs amaesc on match",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Dragos\\Roba\\Lectures\\YM2.2\\Thesis\\d3 Masks\\compare_canonicals.py",
+            "console": "integratedTerminal",
+            "args": ["3", "2", "occft_pattlite_bub", "amaesc", "match"],
         },
     ]
 }

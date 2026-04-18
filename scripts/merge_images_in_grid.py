@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 from PIL import Image
 import numpy as np
 from collections import defaultdict
@@ -9,7 +10,7 @@ from collections import defaultdict
 DEBUG = True
 
 INPUT_FOLDER = os.path.join(".", "saliency_maps", "zzz_other_and_zips", "output_comparisons_meandif")
-OUTPUT_FOLDER = os.path.join(INPUT_FOLDER, "results_of_merging")
+OUTPUT_FOLDER = os.path.join(INPUT_FOLDER, f"results_of_merging_{sys.argv[1]}")
 ALL_FILES_UNSORTED_FOLDER = os.path.join(OUTPUT_FOLDER, "all_files_unsorted")
 NOF_IMAGES = 4 # Number of images to merge in a row. If more or less images are found for a pattern, a warning is issued and the group is skipped.
 

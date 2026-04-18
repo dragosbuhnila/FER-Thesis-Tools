@@ -1,0 +1,219 @@
+# Instructions:
+# 
+# The folder structure I use for my heatmaps looks like the following: ()
+# HEATMAPS_machines_phase2
+# ├───Bubbles
+# │   ├───occft_convnext
+# │   │   │───stats_cache
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# │   ├───occft_efficientnetb1
+# │   │   └───stats_cache
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# │   ├───occft_inceptionv3
+# │   │   └───stats_cache
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# │   ├───occft_pattlite
+# │   │   └───stats_cache
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# │   ├───occft_resnet
+# │   │   └───stats_cache
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# │   ├───occft_vgg19
+# │   │   └───stats_cache
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# │   └───occft_yolo
+# │       └───stats_cache
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# ├───EXTERNAL
+# │   ├───occft_convnext
+# │   │   └───stats_cache
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# |   │───...
+# │   └───occft_yolo
+# │   │   └───stats_cache
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# └───GRADCAM 
+# │   ├───occft_convnext
+# │   │   └───stats_cache
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# |   │───...
+# │   └───occft_yolo
+# │   │   └───stats_cache
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# 
+# But new results I obtained are organized as follows:
+# for EXTERNAL, the results are in HEATMAPS
+# xai_subsets_extpert/20260415-173625_extpert_cmplt-run_occft-models_occluded-matching-testset
+# ├───occft_convnext
+# │   ├───ANGRY
+# │   ├───DISGUST
+# │   ├───FEAR
+# │   ├───HAPPY
+# │   ├───HEATMAPS
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# │   ├───NEUTRAL
+# │   ├───SAD
+# │   └───SURPRISE
+# │───...
+# └───occft_yolo
+#     ├───ANGRY
+#     ├───DISGUST
+#     ├───FEAR
+#     ├───HAPPY
+#     ├───HEATMAPS
+#     ├───NEUTRAL
+#     ├───SAD
+#     └───SURPRISE 
+#
+# for BUBBLES, the result are again in HEATMAPS, but it's organized in a different way
+# xai_subsets_bubbles/20260415-153404_bubbles_cmplt-run_occft-models_occluded-matching-testset
+# ├───HEATMAPS
+# │   ├───Bubbles_CSM_occft_convnext
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# │   ├───Bubbles_CSM_occft_efficientnetb1
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# │   ├───Bubbles_CSM_occft_inceptionv3
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# │   ├───Bubbles_CSM_occft_pattlite
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# │   ├───Bubbles_CSM_occft_resnet
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# │   │───Bubbles_CSM_occft_vgg19
+# │   │   └───ANGRY_canonical.npy
+# |   |   │───...
+# │   │   └───SURPRISE_Neutral.npy
+# │   └───Bubbles_CSM_occft_yolo
+# │       └───ANGRY_canonical.npy
+# |       │───...
+# │       └───SURPRISE_Neutral.npy
+# ├───occft_convnext
+# │   ├───ANGRY
+# │   ├───DISGUST
+# │   ├───FEAR
+# │   ├───HAPPY
+# │   ├───NEUTRAL
+# │   ├───SAD
+# │   └───SURPRISE
+# │───...
+# └───occft_yolo
+#     └───...
+#
+# for gradcam, once again we have HEATMAPS, but it's nested inside of the layers
+# xai_subsets_gradcam/20260415-153404_gradcam_cmplt-run_occft-models_occluded-matching-testset
+# ├───occft_convnext
+# │   ├───convnext_base_stage_0_block_0_depthwise_conv
+# │   │   ├───ANGRY
+# │   │   ├───DISGUST
+# │   │   ├───FEAR
+# │   │   ├───HAPPY
+# │   │   ├───HEATMAPS
+# │   │   │    │───ANGRY_canonical.npy
+# |   │   │    │───...
+# │   │   │    └───SURPRISE_Neutral.npy
+# │   │   ├───NEUTRAL
+# │   │   ├───SAD
+# │   │   └───SURPRISE
+# |   ├──...
+# │   └───convnext_base_stage_2_block_24_depthwise_conv
+# │       ├───ANGRY
+# │       ├───DISGUST
+# │       ├───FEAR
+# │       ├───HAPPY
+# │       ├───HEATMAPS
+# │       │    │───ANGRY_canonical.npy
+# |       │    │───...
+# │       │    └───SURPRISE_Neutral.npy
+# │       ├───NEUTRAL
+# │       ├───SAD
+# │       └───SURPRISE
+# └───occft_yolo
+#     └───...
+#
+# For gradcam, the layer of interest is usually the last one but there may be exceptions. Here's the list of the layers of intersest for all models:
+# The gradcam layer used for the comparisons is usually the last one for each model, with two exceptions or ambiguities. I'll list all 7 models for completeness:
+#     > convnext:     we use convnext_base_stage_2_block_24_depthwise_conv (30th layer)
+#     > efficientnet: we use block4c_project_conv (15th layer)                                        [stem_conv is layer 0]
+#     > inception:    we use conv2d_30 (30th layer in total), since it's the last one with results
+#     > pattlite:     we use conv_pw_8 (8th layer)                                                    [conv_1 is layer 0]
+#     > resnet:       we use conv4_block5_3_conv (12th layer)
+#     > vgg:          we use block4_conv4 (11th layer)
+#     > yolo:         we use module_8     (7th layer)
+#
+#
+#
+# I want you to make me a script that refactors the new results to be organized in the same way as the old ones.
+# One really important point that I have not mentioned yet is that the new results are 14fold, meaning that each structure stated above repeats 14 times:
+#   inside of HEATMAPS_OCCFT_SUBSETS_RAW_DIR_BASENAME = "CONFRONTI MACHINES NEW" there are 3 folders, one for each of the 3 xai methods, and inside each of these folders there are 14 folders, one for each subset.
+# This means that the results will not be copied directly inside HEATMAPS_OCCFT_SUBSETS_DIR_BASENAME = "HEATMAPS_machines_phase2_subsets", but instead in a subdirectory of this, which one subdirectory for each of the 14 subsets. 
+#   These subfolders must be called as follows:
+#           match
+#           mismatch
+#           negative_ANGRY
+#           negative_DISGUST
+#           negative_FEAR
+#           negative_HAPPY
+#           negative_NEUTRAL
+#           negative_SAD
+#           negative_SURPRISE
+#           positive_ANGRY
+#           positive_DISGUST
+#           positive_FEAR
+#           positive_HAPPY
+#           positive_NEUTRAL
+#           positive_SAD
+#           positive_SURPRISE
+#   For completeness, the name structure of the new results is the following (providing bubbles as an example):
+#           20260415-153404_bubbles_cmplt-run_occft-models_occluded-matching-testset
+#           20260415-161721_bubbles_cmplt-run_occft-models_occluded-mismatching-testset
+#           20260415-193955_bubbles_cmplt-run_occft-models_occlusion-positive-angry-testset
+#           20260415-200349_bubbles_cmplt-run_occft-models_occlusion-positive-disgust-testset
+#           20260415-202734_bubbles_cmplt-run_occft-models_occlusion-positive-fear-testset
+#           20260415-205129_bubbles_cmplt-run_occft-models_occlusion-positive-happy-testset
+#           20260415-211606_bubbles_cmplt-run_occft-models_occlusion-positive-sad-testset
+#           20260415-213959_bubbles_cmplt-run_occft-models_occlusion-positive-surprise-testset
+#           20260415-220338_bubbles_cmplt-run_occft-models_occlusion-negative-angry-testset
+#           20260415-222121_bubbles_cmplt-run_occft-models_occlusion-negative-disgust-testset
+#           20260415-223820_bubbles_cmplt-run_occft-models_occlusion-negative-fear-testset
+#           20260415-225515_bubbles_cmplt-run_occft-models_occlusion-negative-happy-testset
+#           20260415-231214_bubbles_cmplt-run_occft-models_occlusion-negative-sad-testset
+#           20260415-232908_bubbles_cmplt-run_occft-models_occlusion-negative-surprise-testset
+
+# inside of modules.saliencies_folders you may find 
+# BASE_DIR = os.path.join(".", "saliency_maps")
+# HEATMAPS_OCCFT_SUBSETS_DIR_BASENAME = "HEATMAPS_machines_phase2_subsets"
+# HEATMAPS_OCCFT_SUBSETS_RAW_DIR_BASENAME = "CONFRONTI MACHINES NEW"
+# and the path to the basenames may be obtained by joining these with BASE_DIR, so for example the path to the raw results will be os.path.join(BASE_DIR, HEATMAPS_OCCFT_SUBSETS_RAW_DIR_BASENAME)

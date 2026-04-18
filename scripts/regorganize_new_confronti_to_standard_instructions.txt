@@ -1,0 +1,120 @@
+# Instructions:
+# 
+# The folder structure I use for my heatmaps looks like the following:
+# HEATMAPS_humans_phase2
+# ├── Results
+# │   ├── TESTER_X (e.g. ALITOM or SILVEN)
+# │   │   ├── heatmaps
+# │   │   │   ├── ANGRY_canonical.npy
+# │   │   │   ├── ANGRY_Disgust.npy
+# │   │   │   ├── ...
+# │   ├── ...
+# |   ├── TESTER_Z
+# 
+# But new results I was sent has two folder structures that look like the following:
+# ├───CSM_12_GROUPS_OCCLUDED
+# │   ├───ALITOM
+# │   │   └───occlusion_groups
+# │   │       ├───negative_ANGRY
+# │   │       │   └───cells
+# │   │       │         ├── ANGRY_ANGRY.npy
+# │   │       │         ├── ANGRY_DISGUST.npy
+# │   │       │         ├── ...
+# │   │       ├───negative_DISGUST
+# │   │       │   └───cells
+# │   │       │         ├── ANGRY_ANGRY.npy
+# │   │       │         ├── ANGRY_DISGUST.npy
+# │   │       │         ├── ...
+# │   │       ├───negative_FEAR
+# │   │       │   └───cells
+# │   │       │         ├── ...
+# │   │       ├───negative_HAPPY
+# │   │       │   └───cells
+# │   │       │         ├── ...
+# │   │       ├───negative_SAD
+# │   │       │   └───cells
+# │   │       │         ├── ...
+# │   │       ├───negative_SURPRISE
+# │   │       │   └───cells
+# │   │       │         ├── ...
+# │   │       ├───positive_ANGRY
+# │   │       │   └───cells
+# │   │       │         ├── ...
+# │   │       ├───positive_DISGUST
+# │   │       │   └───cells
+# │   │       │         ├── ...
+# │   │       ├───positive_FEAR
+# │   │       │   └───cells
+# │   │       │         ├── ...
+# │   │       ├───positive_HAPPY
+# │   │       │   └───cells
+# │   │       │         ├── ...
+# │   │       ├───positive_SAD
+# │   │       │   └───cells
+# │   │       │         ├── ...
+# │   │       └───positive_SURPRISE
+# │   │           └───cells
+# │   │                 ├── ...
+# │   ├───...
+# │   |
+# │   └───SILVEN
+# │       └───occlusion_groups
+# │           ├── ...
+# └───M-MM
+#     ├───ALITOM
+#     │   └───match_mismatch
+#     │       ├───heatmaps_match
+#     │       │    ├── ANGRY_ANGRY_mismatch.npy
+#     │       │    ├── ANGRY_DISGUST_mismatch.npy
+#     │       │    ├── ...
+#     │       └───heatmaps_mismatch
+#     │            ├── ANGRY_ANGRY_mismatch.npy
+#     │            ├── ANGRY_DISGUST_mismatch.npy
+#     │            ├── ...
+#     ├───AMAESC
+#     │   └───match_mismatch
+#     │       ├───heatmaps_match
+#     │       │    ├── ...
+#     │       └───heatmaps_mismatch
+#     │            ├── ...
+#     ├───FEDMAR
+#     │   └───match_mismatch
+#     │       ├───heatmaps_match
+#     │       │    ├── ...
+#     │       └───heatmaps_mismatch
+#     │            ├── ...
+#     ├───MARCEC
+#     │   └───match_mismatch
+#     │       ├───heatmaps_match
+#     │       │    ├── ...
+#     │       └───heatmaps_mismatch
+#     │            ├── ...
+#     ├───MARDIB
+#     │   └───match_mismatch
+#     │       ├───heatmaps_match
+#     │       │    ├── ...
+#     │       └───heatmaps_mismatch
+#     │            ├── ...
+#     ├───REBLEO
+#     │   └───match_mismatch
+#     │       ├───heatmaps_match
+#     │       │    ├── ...
+#     │       └───heatmaps_mismatch
+#     │            ├── ...
+#     ├───ROCLAB
+#     │   └───match_mismatch
+#     │       ├───heatmaps_match
+#     │       │    ├── ...
+#     │       └───heatmaps_mismatch
+#     │            ├── ...
+#     └───SILVEN
+#         └───match_mismatch
+#             ├───heatmaps_match
+#             │    ├── ...
+#             └───heatmaps_mismatch
+#                  ├── ...
+#
+# I want you to make me a script that refactors the new format to the old format.
+# Put the results of the new formats (the 14 subsets, namely match/mismatch/posneg_emotion) in a same folder called HEATMAPS_humans_phase2_subsets,
+# Inside of it we will thus have 14 folders, one for each subset, and inside of each subset we will have other folders and finally the npys with the same format as the OLD format like in HEATMAPS_humans_phase2
+#

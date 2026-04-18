@@ -22,6 +22,12 @@ HEATMAPS_OCCFT_DIR_BASENAME = "HEATMAPS_machines_phase2"
 HEATMAPS_ADE_DIR_BASENAME = "HEATMAPS_humans_phase1"
 HEATMAPS_ALE_DIR_BASENAME = "HEATMAPS_humans_phase2"
 
+HEATMAPS_ALE_SUBSETS_DIR_BASENAME = "HEATMAPS_humans_phase2_subsets"
+HEATMAPS_ALE_SUBSETS_RAW_DIR_BASENAME = "CONFRONTI NEW"
+HEATMAPS_OCCFT_SUBSETS_DIR_BASENAME = "HEATMAPS_machines_phase2_subsets"
+HEATMAPS_OCCFT_SUBSETS_RAW_DIR_BASENAME = "CONFRONTI MACHINES NEW"
+
+
 HEATMAPS_ALE_SINGLE_HUMANS_DIR_PATH = os.path.join(BASE_DIR, HEATMAPS_ALE_DIR_BASENAME, "Results")
 
 RANKING_PHASE2_FILE_PATH = os.path.join(BASE_DIR, HEATMAPS_ALE_DIR_BASENAME, "testers_ranking.pkl")
@@ -29,6 +35,61 @@ GENDER_PHASE2_FILE_PATH =  os.path.join(BASE_DIR, HEATMAPS_ALE_DIR_BASENAME, "te
 SETS_PHASE2_FILE_PATH =    os.path.join(BASE_DIR, HEATMAPS_ALE_DIR_BASENAME, "testers_name_sets.pkl")
 
 # 1) Saliency folders (mostly aggregated ones)
+saliencies_folders_rel_paths_phase1 = {
+    # 1a) Single person 1 (first two are best, last is worst)
+    "fedmar":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\FEDMAR\heatmaps",
+    "marfro":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\MARFRO\heatmaps",
+    "matvin":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\MATVIN\heatmaps",
+
+    # 1b) Single person 2 (3 at 76%, 6 at 75%, 1 at 74%)
+    # 76%
+    "fedama":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\FEDAMA\heatmaps",
+    "dalgon":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\DALGON\heatmaps",
+    "paorus":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\PAORUS\heatmaps",
+    # 75%
+    "fraghi":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\FRAGHI\heatmaps",
+    "giugui":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\GIUGUI\heatmaps",
+    "mirtek":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\MIRTEK\heatmaps",
+    "silfer":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\SILFER\heatmaps",
+    "valcol":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\VALCOL\heatmaps",
+    "beafra":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\BEAFRA\heatmaps",
+    # 74%
+    "edodon":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\EDODON\heatmaps",
+
+    # 2) Aggregated persons
+    "men":              rf"{HEATMAPS_ADE_DIR_BASENAME}\AGGREGATED\heatmaps_maschi",
+    "women":            rf"{HEATMAPS_ADE_DIR_BASENAME}\AGGREGATED\heatmaps_femmine",
+    "best":             rf"{HEATMAPS_ADE_DIR_BASENAME}\AGGREGATED\heatmaps_codasup",
+    "worst":            rf"{HEATMAPS_ADE_DIR_BASENAME}\AGGREGATED\heatmaps_codainf",
+
+    # 3) Bubbles
+    "convnext_bub":     rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\ConvNeXt\bubbles_adele",
+    "efficientnet_bub": rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\EfficientNetB1\bubbles_adele",
+    "inceptionv3_bub":  rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\InceptionV3\bubbles_adele",
+    "pattlite_bub":     rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\PattLite\bubbles_adele",
+    "resnet_bub":       rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\ResNet\bubbles_adele",
+    "vgg19_bub":        rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\VGG19\bubbles_adele",
+    "yolo_bub":         rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\YOLO\bubbles_adele",
+
+    # 4) External
+    "convnext_ext":     rf"{HEATMAPS_FEDE_DIR_BASENAME}\EXTERNAL\ConvNeXt",
+    "efficientnet_ext": rf"{HEATMAPS_FEDE_DIR_BASENAME}\EXTERNAL\EfficientNetB1",
+    "inceptionv3_ext":  rf"{HEATMAPS_FEDE_DIR_BASENAME}\EXTERNAL\InceptionV3",
+    "pattlite_ext":     rf"{HEATMAPS_FEDE_DIR_BASENAME}\EXTERNAL\PattLite",
+    "resnet_ext":       rf"{HEATMAPS_FEDE_DIR_BASENAME}\EXTERNAL\ResNet",
+    "vgg19_ext":        rf"{HEATMAPS_FEDE_DIR_BASENAME}\EXTERNAL\VGG19",
+    "yolo_ext":         rf"{HEATMAPS_FEDE_DIR_BASENAME}\EXTERNAL\YOLO",
+
+    # 5) Grad (last layer)
+    "convnext_grad":    rf"{HEATMAPS_FEDE_DIR_BASENAME}\GRADCAM\ConvNeXt", 
+    "efficientnet_grad":rf"{HEATMAPS_FEDE_DIR_BASENAME}\GRADCAM\EfficientNetB1",
+    "inceptionv3_grad": rf"{HEATMAPS_FEDE_DIR_BASENAME}\GRADCAM\InceptionV3",
+    "pattlite_grad":    rf"{HEATMAPS_FEDE_DIR_BASENAME}\GRADCAM\PattLite",
+    "resnet_grad":      rf"{HEATMAPS_FEDE_DIR_BASENAME}\GRADCAM\ResNet",
+    "vgg19_grad":       rf"{HEATMAPS_FEDE_DIR_BASENAME}\GRADCAM\VGG19",
+    "yolo_grad":        rf"{HEATMAPS_FEDE_DIR_BASENAME}\GRADCAM\YOLO",
+}
+
 saliencies_folders_rel_paths_phase2 = {
     # 1a) Single person 1 (for best human vs worst human)
     "rebleo":                   rf"{HEATMAPS_ALE_DIR_BASENAME}\Results\REBLEO\heatmaps", # 68.94%
@@ -122,63 +183,36 @@ saliencies_folders_rel_paths_phase2 = {
     "occft_resnet_grad":        rf"{HEATMAPS_OCCFT_DIR_BASENAME}\GRADCAM\occft_resnet",
     "occft_vgg19_grad":         rf"{HEATMAPS_OCCFT_DIR_BASENAME}\GRADCAM\occft_vgg19",
     "occft_yolo_grad":          rf"{HEATMAPS_OCCFT_DIR_BASENAME}\GRADCAM\occft_yolo",
-}    
+}  
+
+# do a for loop that popoulates it with all the subsets, where each subset will have a dictinoary like the above
+saliencies_folders_rel_paths_phase2_subsets = {}
+
+# Exclude krijak and lucrug because they are only used in the person vs person comparisons and not in the ones with the models
+subsets = os.listdir(os.path.join(BASE_DIR, HEATMAPS_ALE_SUBSETS_DIR_BASENAME))
+for subset in subsets:
+    subset_path = os.path.join(BASE_DIR, HEATMAPS_ALE_SUBSETS_DIR_BASENAME, subset)
+    if os.path.isdir(subset_path):
+        subset_name = subset
+        saliencies_folders_rel_paths_phase2_subsets[subset_name] = {}
+    for tester, heatmaps_folder_path in saliencies_folders_rel_paths_phase2.items():
+        if tester.lower() in ["krijak", "lucrug", "men", "women", "best", "worst"]:  # exclude these testers from the subsets dict
+            continue
+
+        if "occft" in tester.lower():  
+            saliencies_folders_rel_paths_phase2_subsets[subset_name][tester] = heatmaps_folder_path.replace(HEATMAPS_OCCFT_DIR_BASENAME, f"{HEATMAPS_OCCFT_SUBSETS_DIR_BASENAME}\\{subset_name}")
+        else:
+            saliencies_folders_rel_paths_phase2_subsets[subset_name][tester] = heatmaps_folder_path.replace(HEATMAPS_ALE_DIR_BASENAME, f"{HEATMAPS_ALE_SUBSETS_DIR_BASENAME}\\{subset_name}")
+
+# # Uncomment this to check the subsets paths
+# for subset, dictionary in saliencies_folders_rel_paths_phase2_subsets.items():
+#     print(f"Subset: {subset}")
+#     for tester, path in dictionary.items():
+#         print(f"  Tester: {tester}, Path: {path}")
 
 
-saliencies_folders_rel_paths_phase1 = {
-    # 1a) Single person 1 (first two are best, last is worst)
-    "fedmar":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\FEDMAR\heatmaps",
-    "marfro":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\MARFRO\heatmaps",
-    "matvin":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\MATVIN\heatmaps",
+    
 
-    # 1b) Single person 2 (3 at 76%, 6 at 75%, 1 at 74%)
-    # 76%
-    "fedama":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\FEDAMA\heatmaps",
-    "dalgon":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\DALGON\heatmaps",
-    "paorus":           rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\PAORUS\heatmaps",
-    # 75%
-    "fraghi":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\FRAGHI\heatmaps",
-    "giugui":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\GIUGUI\heatmaps",
-    "mirtek":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\MIRTEK\heatmaps",
-    "silfer":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\SILFER\heatmaps",
-    "valcol":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\VALCOL\heatmaps",
-    "beafra":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\BEAFRA\heatmaps",
-    # 74%
-    "edodon":          rf"{HEATMAPS_ADE_DIR_BASENAME}\Results\EDODON\heatmaps",
-
-    # 2) Aggregated persons
-    "men":              rf"{HEATMAPS_ADE_DIR_BASENAME}\AGGREGATED\heatmaps_maschi",
-    "women":            rf"{HEATMAPS_ADE_DIR_BASENAME}\AGGREGATED\heatmaps_femmine",
-    "best":             rf"{HEATMAPS_ADE_DIR_BASENAME}\AGGREGATED\heatmaps_codasup",
-    "worst":            rf"{HEATMAPS_ADE_DIR_BASENAME}\AGGREGATED\heatmaps_codainf",
-
-    # 3) Bubbles
-    "convnext_bub":     rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\ConvNeXt\bubbles_adele",
-    "efficientnet_bub": rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\EfficientNetB1\bubbles_adele",
-    "inceptionv3_bub":  rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\InceptionV3\bubbles_adele",
-    "pattlite_bub":     rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\PattLite\bubbles_adele",
-    "resnet_bub":       rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\ResNet\bubbles_adele",
-    "vgg19_bub":        rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\VGG19\bubbles_adele",
-    "yolo_bub":         rf"{HEATMAPS_FEDE_DIR_BASENAME_NONAGGR}\bubbles\bubbles\YOLO\bubbles_adele",
-
-    # 4) External
-    "convnext_ext":     rf"{HEATMAPS_FEDE_DIR_BASENAME}\EXTERNAL\ConvNeXt",
-    "efficientnet_ext": rf"{HEATMAPS_FEDE_DIR_BASENAME}\EXTERNAL\EfficientNetB1",
-    "inceptionv3_ext":  rf"{HEATMAPS_FEDE_DIR_BASENAME}\EXTERNAL\InceptionV3",
-    "pattlite_ext":     rf"{HEATMAPS_FEDE_DIR_BASENAME}\EXTERNAL\PattLite",
-    "resnet_ext":       rf"{HEATMAPS_FEDE_DIR_BASENAME}\EXTERNAL\ResNet",
-    "vgg19_ext":        rf"{HEATMAPS_FEDE_DIR_BASENAME}\EXTERNAL\VGG19",
-    "yolo_ext":         rf"{HEATMAPS_FEDE_DIR_BASENAME}\EXTERNAL\YOLO",
-
-    # 5) Grad (last layer)
-    "convnext_grad":    rf"{HEATMAPS_FEDE_DIR_BASENAME}\GRADCAM\ConvNeXt", 
-    "efficientnet_grad":rf"{HEATMAPS_FEDE_DIR_BASENAME}\GRADCAM\EfficientNetB1",
-    "inceptionv3_grad": rf"{HEATMAPS_FEDE_DIR_BASENAME}\GRADCAM\InceptionV3",
-    "pattlite_grad":    rf"{HEATMAPS_FEDE_DIR_BASENAME}\GRADCAM\PattLite",
-    "resnet_grad":      rf"{HEATMAPS_FEDE_DIR_BASENAME}\GRADCAM\ResNet",
-    "vgg19_grad":       rf"{HEATMAPS_FEDE_DIR_BASENAME}\GRADCAM\VGG19",
-    "yolo_grad":        rf"{HEATMAPS_FEDE_DIR_BASENAME}\GRADCAM\YOLO",
-}
 
 # 2) Tester groups (used for saliencies)
 TESTERS_NAME_SETS_PHASE1_PATH = os.path.join(BASE_DIR, "HEATMAPS_humans_phase1", "Results", "testers_name_sets.pkl")
