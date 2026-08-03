@@ -5,4 +5,4 @@ The main scripts/programs are:
 - "compare_canonicals.py" can be used to calculate similarities between saliency/canonical maps based on a few possible metrics.
 
 
-In order to download the "saliency_maps" contact the owner of the repo.
+Go to the following Google Drive folder for files needed for the scripts to work and for data: https://drive.google.com/drive/u/1/folders/1tI12ol_ucW20QpwtUETirpQt6awhTCwJ
