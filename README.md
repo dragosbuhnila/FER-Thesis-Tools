@@ -6,3 +6,5 @@ The main scripts/programs are:
 
 
 Go to the following Google Drive folder for files needed for the scripts to work and for data: https://drive.google.com/drive/u/1/folders/1tI12ol_ucW20QpwtUETirpQt6awhTCwJ
+
+For the code relative to the training, evaluation, and the extraction of xAI heatmaps and subsequently processed saliency maps, see: https://github.com/dragosbuhnila/FER-Thesis-NNs
